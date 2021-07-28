@@ -1,15 +1,10 @@
 package roc
 
-import "fmt"
+import (
+	"fmt"
+)
 
-// Identifier is an opaque token that identifies a single resource
-// a resource may have one or more identifiers
-type Identifier string
 
-type RepresentationClass interface {
-	String() string
-	Identifier() Identifier
-}
 
 type EndpointInteface interface {
 	// TODO return Resolution Response
@@ -20,11 +15,18 @@ type EndpointInteface interface {
 	Delete(ctx RequestContext) bool
 	Exists(ctx RequestContext) bool
 	Transrept(ctx RequestContext) Representation
+	Type() string
 	// Meta(ctx RequestArgument) MetaRepresentation
 }
 
+const EndpointTypeAccessor string = "assesor"
+
 type Endpoint struct {
-	Grammar Grammar
+	Grammar Grammar `yaml:"grammar,omitempty"`
+}
+
+func (e Endpoint) Type() string {
+	return EndpointTypeAccessor
 }
 
 func (e Endpoint) String() string {
@@ -54,6 +56,6 @@ func (e Endpoint) Transrept(ctx RequestContext) Representation {
 	return nil
 }
 
-// func (e Endpoint) Meta(ctx RequestArgument) MetaRepresentation {
+// func (e Endpoint) Meta(ctx RequestContext) MetaRepresentation {
 // 	return nil
 // }

@@ -1,26 +1,43 @@
 package roc
 
+import (
+	"net/http"
+	"net/url"
+)
 
+// Request represents request for a resouce
 type Request struct {
 	identifier          Identifier
 	verb                Verb
 	representationClass RepresentationClass
+	argmuments          url.Values
+	headers             http.Header
 }
 
+func NewRequest(i Identifier, verb Verb, class RepresentationClass) *Request {
+	return &Request{
+		identifier:          i,
+		verb:                verb,
+		representationClass: class,
+	}
+}
 
+// SetRepresentationClass sets the desired format of the representation response
+func (r *Request) SetRepresentationClass(class RepresentationClass) {
+	r.representationClass = class
+}
+
+// Identifier returns the identifier of the requested resource
 func (r Request) Identifier() Identifier {
-    return r.identifier
+	return r.identifier
 }
 
-// RequestArment are tha arguments of the request mapped from the parsed grammar roups
-type RequestArgument struct {
-	// the name of the request argument
-	Name string
-
-	// the value of the named argument. can be passed by value or
-	Value string
+func (r *Request) Headers() http.Header {
+    // req, _ := http.NewRequest()
+    // req.Context()
+	return r.headers
 }
 
-func (r Request) Arguments() {
-
+func (r Request) Arguments() url.Values {
+	return r.argmuments
 }

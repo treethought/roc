@@ -1,6 +1,11 @@
 package roc
 
-import "log"
+import (
+	"io/ioutil"
+	"log"
+
+	"gopkg.in/yaml.v2"
+)
 
 type Kernel struct {
 	Spaces   []Space
@@ -8,12 +13,30 @@ type Kernel struct {
 	issuer   chan (RequestContext)
 }
 
-func NewKernel() Kernel {
-	return Kernel{
+func NewKernel() *Kernel {
+	return &Kernel{
 		Spaces:   []Space{},
 		receiver: make(chan RequestContext),
 		issuer:   make(chan RequestContext),
 	}
+}
+
+func (k *Kernel) LoadFromFile(path string) error {
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	spaces := []Space{}
+
+	err = yaml.Unmarshal(data, &spaces)
+	if err != nil {
+		return err
+	}
+
+	k.Spaces = append(k.Spaces, spaces...)
+	return nil
 }
 
 func (k Kernel) startReceiver() {
@@ -23,13 +46,8 @@ func (k Kernel) startReceiver() {
 	}
 }
 
-func (k Kernel) buildResolveRequest(ctx RequestContext) Request {
-	return Request{
-		identifier: ctx.Request.Identifier(),
-		verb:       Resolve,
-		// TODO: make interface or someting for rep classes
-		// representationClass: ClassResolution{},
-	}
+func (k Kernel) buildResolveRequest(ctx RequestContext) *Request {
+	return NewRequest(ctx.Request.Identifier(), Resolve, nil)
 
 }
 

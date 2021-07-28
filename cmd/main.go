@@ -6,10 +6,13 @@ import (
 	"net/url"
 
 	"github.com/treethought/roc"
+	"github.com/treethought/roc/endpoint"
+	"github.com/treethought/roc/kernel"
+	"github.com/treethought/roc/space"
 )
 
 type FakeEndpoint struct {
-	roc.Endpoint
+	endpoint.Endpoint
 }
 
 func (e FakeEndpoint) Source(ctx roc.RequestContext) roc.Representation {
@@ -23,22 +26,22 @@ func main() {
 		panic(err)
 	}
 
-	endpoint := FakeEndpoint{
-		Endpoint: roc.Endpoint{
-			Grammar: roc.Grammar{
+	ep := FakeEndpoint{
+		Endpoint: endpoint.Endpoint{
+			Grammar: endpoint.Grammar{
 				Base: url,
 			},
 		},
 	}
 
-	space := roc.Space{
+	space := space.Space{
 		Identifier: "space://myspace",
-		Endpoints: []roc.EndpointInteface{
-			endpoint,
+		Endpoints: []endpoint.EndpointInteface{
+			ep,
 		},
 	}
 
-	k := roc.NewKernel()
+	k := kernel.NewKernel()
 	k.Spaces = append(k.Spaces, space)
 
 	ctx := roc.NewRequestContext(context.Background(), "res://my-resource", roc.Sink)

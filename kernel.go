@@ -51,8 +51,8 @@ func (k Kernel) buildResolveRequest(ctx RequestContext) *Request {
 
 }
 
-func (k Kernel) resolveEndpoint(ctx RequestContext) EndpointInteface {
-	c := make(chan (EndpointInteface))
+func (k Kernel) resolveEndpoint(ctx RequestContext) Endpoint {
+	c := make(chan (Endpoint))
 	for _, s := range k.Spaces {
 		go s.MatchEndpoint(ctx, c)
 	}

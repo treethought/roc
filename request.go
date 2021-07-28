@@ -32,9 +32,12 @@ func (r Request) Identifier() Identifier {
 	return r.identifier
 }
 
+// Verb returns the specified action to be taken when evaluating the request
+func (r Request) Verb() Verb {
+	return r.verb
+}
+
 func (r *Request) Headers() http.Header {
-    // req, _ := http.NewRequest()
-    // req.Context()
 	return r.headers
 }
 

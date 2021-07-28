@@ -18,6 +18,9 @@ type Grammar struct {
 }
 
 func (g Grammar) String() string {
+    if g.Base == nil {
+        return ""
+    }
 	return g.Base.String()
 }
 

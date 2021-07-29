@@ -36,12 +36,12 @@ func (e Accessor) Type() string {
 }
 
 func (e Accessor) CanResolve(request *Request) bool {
-	return e.Grammar().Match(request.Identifier())
+	return e.Grammar().Match(request.Identifier)
 }
 
 func (e Accessor) Evaluate(request *Request) Representation {
 
-	switch request.Verb() {
+	switch request.Verb {
 	case Source:
 		return e.Source(request)
 	case Sink:

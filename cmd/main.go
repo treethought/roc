@@ -9,9 +9,12 @@ import (
 func main() {
 
 	k := roc.NewKernel()
-	space := roc.NewSpace("space://myspace")
 
-	k.Register(space, "./plugin/my_endpoint")
+	endpoint := roc.NewPhysicalEndpoint("./plugin/my_endpoint")
+
+	space := roc.NewSpace("space://myspace", endpoint)
+
+	k.Register(space)
 
 	request := roc.NewRequest("res://hello-world", roc.Sink, nil)
 

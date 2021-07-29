@@ -24,11 +24,14 @@ var pluginMap = map[string]plugin.Plugin{
 }
 
 type Resolver interface {
-	Resolve(request *Request, ch chan (Evaluator))
+	Resolve(request *Request, ch chan (Endpoint))
+	Identifier() Identifier
+	// Bind(PhysicalEndpoint)
 }
 
 type Evaluator interface {
 	Evaluate(request *Request) Representation
+	Identifier() Identifier
 }
 
 type PhysicalEndpoint struct {
@@ -77,7 +80,7 @@ type Dispatcher struct {
 }
 
 type Kernel struct {
-	Spaces   map[Identifier]Space
+	Spaces   map[Identifier]Resolver
 	receiver chan (*Request)
 	server   http.Server
 	client   *plugin.Client
@@ -85,26 +88,18 @@ type Kernel struct {
 
 func NewKernel() *Kernel {
 	k := &Kernel{
-		Spaces:   make(map[Identifier]Space),
+		Spaces:   make(map[Identifier]Resolver),
 		receiver: make(chan *Request),
 	}
 
 	return k
 }
 
-func (k *Kernel) Register(space Space, endpointPath string) {
-	log.Printf("registering endpoint to space: %s", space.Identifier)
-	endpoint := NewPhysicalEndpoint(endpointPath)
+func (k *Kernel) Register(space Resolver) {
+	log.Printf("registering endpoint to space: %s", space.Identifier())
+	k.Spaces[space.Identifier()] = space
 
-	if k.Spaces == nil {
-		k.Spaces = make(map[Identifier]Space)
-	}
-	space, ok := k.Spaces[space.Identifier]
-	if !ok {
-		k.Spaces[space.Identifier] = space
-	}
-
-	space.Bind(*endpoint)
+	// space.Bind(*endpoint)
 }
 
 func (k *Kernel) Receiver() chan (*Request) {
@@ -119,12 +114,12 @@ func (k Kernel) startReceiver() {
 }
 
 func (k Kernel) buildResolveRequest(request *Request) *Request {
-	return NewRequest(request.Identifier(), Resolve, nil)
+	return NewRequest(request.Identifier, Resolve, nil)
 
 }
 
-func (k Kernel) resolveEndpoint(request *Request) PhysicalEndpoint {
-	c := make(chan (PhysicalEndpoint))
+func (k Kernel) resolveEndpoint(request *Request) Endpoint {
+	c := make(chan (Endpoint))
 	for _, s := range k.Spaces {
 		go s.Resolve(request, c)
 	}
@@ -133,13 +128,20 @@ func (k Kernel) resolveEndpoint(request *Request) PhysicalEndpoint {
 }
 
 func (k Kernel) Dispatch(request *Request) Representation {
-	log.Printf("dispatching request for identifer: %s", request.Identifier())
+	log.Printf("dispatching request for identifer: %s", request.Identifier)
 
 	endpoint := k.resolveEndpoint(request)
-	log.Printf("resolved to endpoint: %s", endpoint.Impl.New)
+
+	// phys, ok := endpoint.(PhysicalEndpoint)
+	// if !ok {
+	//     log.Println("resolved endpoint is not a plugin")
+	//     return nil
+	// }
+
+	// log.Printf("resolved to endpoint: %s", phys.Impl.New)
 
 	// TODO route verbs to methods
-	rep := endpoint.Impl.Source(request)
+	rep := endpoint.Source(request)
 	return rep
 
 }

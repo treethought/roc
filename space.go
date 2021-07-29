@@ -5,33 +5,33 @@ import (
 )
 
 type Space struct {
-	Identifier Identifier `yaml:"identifier,omitempty"`
-	Endpoints  []Endpoint `yaml:"endpoints,omitempty"`
-	Imports    []Space    `yaml:"imports,omitempty"`
+	Identifier Identifier         `yaml:"identifier,omitempty"`
+	Endpoints  []PhysicalEndpoint `yaml:"endpoints,omitempty"`
+	Imports    []Space            `yaml:"imports,omitempty"`
 	channel    chan (*Request)
 }
 
-func NewSpace(identifier Identifier) *Space {
-	return &Space{
+func NewSpace(identifier Identifier) Space {
+	return Space{
 		Identifier: identifier,
-		Endpoints:  []Endpoint{},
+		Endpoints:  []PhysicalEndpoint{},
 		Imports:    []Space{},
+		channel:    make(chan *Request),
 	}
 }
 
-func (s Space) Resolve(request *Request, c chan (Endpoint)) {
+func (s Space) Resolve(request *Request, c chan (PhysicalEndpoint)) {
 	log.Printf("interrogating endpoints of space: %s", s.Identifier)
 	for _, e := range s.Endpoints {
-		if e.CanResolve(request) {
-			log.Printf("endpoint affirmed to resolve!: %s", e)
+		if e.Impl.CanResolve(request) {
+			log.Print("endpoint affirmed to resolve!: ")
 			c <- e
 		}
 	}
 }
 
 // Bind binds an endpoint to to the space using it's grammar
-func (s *Space) Bind(endpoint Endpoint) {
-
+func (s Space) Bind(endpoint PhysicalEndpoint) {
 	// TODO map of identifiers -> endpoint?
 	s.Endpoints = append(s.Endpoints, endpoint)
 

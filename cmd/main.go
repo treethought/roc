@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 
@@ -12,12 +11,11 @@ type FakeEndpoint struct {
 	*roc.Accessor
 }
 
-func (e FakeEndpoint) Source(ctx roc.RequestContext) roc.Representation {
+func (e FakeEndpoint) Source(request *roc.Request) roc.Representation {
 	return "YO"
 }
 
 func main() {
-
 	url, err := url.Parse("res://my-resource")
 	if err != nil {
 		panic(err)
@@ -31,7 +29,7 @@ func main() {
 		Accessor: roc.NewAccessor(grammar),
 	}
 
-	space := roc.Space{
+	space := &roc.Space{
 		Identifier: "space://myspace",
 		Endpoints: []roc.Endpoint{
 			endpoint,
@@ -41,9 +39,10 @@ func main() {
 	k := roc.NewKernel()
 	k.Spaces = append(k.Spaces, space)
 
-	ctx := roc.NewRequestContext(context.Background(), "res://my-resource", roc.Sink)
+	request := roc.NewRequest("res://my-resource", roc.Sink, nil)
 
-	rep := k.Dispatch(ctx)
+	rep := k.Dispatch(request)
 	fmt.Println(rep)
+    k.Serve(8765)
 
 }

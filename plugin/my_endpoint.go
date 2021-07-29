@@ -43,7 +43,7 @@ func (e *MyEndpoint) Exists(request *roc.Request) bool {
 // CanResolve responds affirmatively if the endpoint can handle the request based on the identifier
 func (e *MyEndpoint) CanResolve(request *roc.Request) bool {
 	e.logger.Debug("checking if can resolve")
-	return request.Identifier() == e.Identifier
+	return request.Identifier == e.Identifier
 }
 
 // Evaluate processes a request to create or return a Representation of the requested resource

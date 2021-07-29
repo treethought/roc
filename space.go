@@ -5,34 +5,44 @@ import (
 )
 
 type Space struct {
-	Identifier Identifier         `yaml:"identifier,omitempty"`
-	Endpoints  []PhysicalEndpoint `yaml:"endpoints,omitempty"`
+	identifier Identifier         `yaml:"identifier,omitempty"`
+	Endpoints  []*PhysicalEndpoint `yaml:"endpoints,omitempty"`
 	Imports    []Space            `yaml:"imports,omitempty"`
 	channel    chan (*Request)
 }
 
-func NewSpace(identifier Identifier) Space {
+func NewSpace(identifier Identifier, endpoints ...*PhysicalEndpoint) Space {
 	return Space{
-		Identifier: identifier,
-		Endpoints:  []PhysicalEndpoint{},
+		identifier: identifier,
+		Endpoints:  endpoints,
 		Imports:    []Space{},
 		channel:    make(chan *Request),
 	}
 }
 
-func (s Space) Resolve(request *Request, c chan (PhysicalEndpoint)) {
-	log.Printf("interrogating endpoints of space: %s", s.Identifier)
+func (s Space) Identifier() Identifier {
+    return s.identifier
+}
+
+
+func (s Space) Resolve(request *Request, c chan (Endpoint)) {
+	log.Printf("interrogating endpoints of space: %s", s.Identifier())
 	for _, e := range s.Endpoints {
+
+        log.Print("calling plugin")
+        res := e.Impl.CanResolve(request)
+        log.Print("RESOLVABLE: ", res)
+
 		if e.Impl.CanResolve(request) {
 			log.Print("endpoint affirmed to resolve!: ")
-			c <- e
+			c <- e.Impl
 		}
 	}
 }
 
-// Bind binds an endpoint to to the space using it's grammar
-func (s Space) Bind(endpoint PhysicalEndpoint) {
-	// TODO map of identifiers -> endpoint?
-	s.Endpoints = append(s.Endpoints, endpoint)
+// // Bind binds an endpoint to to the space using it's grammar
+// func (s *Space) Bind(endpoint PhysicalEndpoint) {
+// 	// TODO map of identifiers -> endpoint?
+// 	s.Endpoints = append(s.Endpoints, endpoint)
 
-}
+// }

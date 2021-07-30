@@ -2,7 +2,6 @@ package roc
 
 import (
 	"log"
-	"net/http"
 	"os/exec"
 
 	"github.com/hashicorp/go-plugin"
@@ -24,13 +23,13 @@ var pluginMap = map[string]plugin.Plugin{
 }
 
 type Resolver interface {
-	Resolve(request *Request, ch chan (Endpoint))
+	Resolve(request *RequestContext, ch chan (Endpoint))
 	Identifier() Identifier
 	// Bind(PhysicalEndpoint)
 }
 
 type Evaluator interface {
-	Evaluate(request *Request) Representation
+	Evaluate(request *RequestContext) Representation
 	Identifier() Identifier
 }
 
@@ -57,7 +56,7 @@ func NewPhysicalEndpoint(path string) *PhysicalEndpoint {
 	}
 	endpoint.rpc = rpcClient
 
-	// Request the plugin
+	// RequestContext the plugin
 	raw, err := rpcClient.Dispense("endpoint")
 	if err != nil {
 		log.Fatal(err)
@@ -74,22 +73,21 @@ func (e *PhysicalEndpoint) Kill() {
 	e.client.Kill()
 }
 
-type Dispatcher struct {
-	resolvers   []Resolver
-	evalutators []Evaluator
-}
+// type Dispatcher struct {
+// 	resolvers   []Resolver
+// 	evalutators []Evaluator
+// }
 
 type Kernel struct {
 	Spaces   map[Identifier]Resolver
-	receiver chan (*Request)
-	server   http.Server
+	receiver chan (*RequestContext)
 	client   *plugin.Client
 }
 
 func NewKernel() *Kernel {
 	k := &Kernel{
 		Spaces:   make(map[Identifier]Resolver),
-		receiver: make(chan *Request),
+		receiver: make(chan *RequestContext),
 	}
 
 	return k
@@ -102,7 +100,7 @@ func (k *Kernel) Register(space Resolver) {
 	// space.Bind(*endpoint)
 }
 
-func (k *Kernel) Receiver() chan (*Request) {
+func (k *Kernel) Receiver() chan (*RequestContext) {
 	return k.receiver
 }
 
@@ -113,24 +111,24 @@ func (k Kernel) startReceiver() {
 	}
 }
 
-func (k Kernel) buildResolveRequest(request *Request) *Request {
-	return NewRequest(request.Identifier, Resolve, nil)
+func (k Kernel) buildResolveRequestContext(request *Request) *RequestContext {
+	return NewRequestContext(request.Identifier, Resolve)
 
 }
 
-func (k Kernel) resolveEndpoint(request *Request) Endpoint {
+func (k Kernel) resolveEndpoint(ctx *RequestContext) Endpoint {
 	c := make(chan (Endpoint))
 	for _, s := range k.Spaces {
-		go s.Resolve(request, c)
+		go s.Resolve(ctx, c)
 	}
 
 	return <-c
 }
 
-func (k Kernel) Dispatch(request *Request) Representation {
-	log.Printf("dispatching request for identifer: %s", request.Identifier)
+func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
+	log.Printf("dispatching request for identifer: %s", ctx.Request.Identifier)
 
-	endpoint := k.resolveEndpoint(request)
+	endpoint := k.resolveEndpoint(ctx)
 
 	// phys, ok := endpoint.(PhysicalEndpoint)
 	// if !ok {
@@ -141,7 +139,7 @@ func (k Kernel) Dispatch(request *Request) Representation {
 	// log.Printf("resolved to endpoint: %s", phys.Impl.New)
 
 	// TODO route verbs to methods
-	rep := endpoint.Source(request)
-	return rep
+	rep := endpoint.Source(ctx)
+	return rep, nil
 
 }

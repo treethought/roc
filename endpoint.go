@@ -11,16 +11,16 @@ type Endpoint interface {
 	Resource
 
 	// CanResolve responds affirmatively if the endpoint can handle the request based on the identifier
-	CanResolve(request *Request) bool
+	CanResolve(ctx *RequestContext) bool
 
 	// Grammer returns the defined set of identifiers that bind an endpoint to a Space
 	// Grammar() Grammar
 
 	// Evaluate processes a request to create or return a Representation of the requested resource
-	Evaluate(request *Request) Representation
+	Evaluate(ctx *RequestContext) Representation
 
 	// Type() string
-	// Meta(ctx RequestArgument) map[string][]string
+	// Meta(ctx RequestContextArgument) map[string][]string
 }
 
 // Here is an implementation that talks over RPC
@@ -29,9 +29,9 @@ type EndpointRPC struct {
 }
 
 // CanResolve responds affirmatively if the endpoint can handle the request based on the identifier
-func (e *EndpointRPC) CanResolve(request *Request) bool {
+func (e *EndpointRPC) CanResolve(ctx *RequestContext) bool {
 	var resp bool
-	err := e.client.Call("Plugin.CanResolve", request, &resp)
+	err := e.client.Call("Plugin.CanResolve", ctx, &resp)
 	if err != nil {
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
@@ -44,9 +44,9 @@ func (e *EndpointRPC) CanResolve(request *Request) bool {
 // Grammer returns the defined set of identifiers that bind an endpoint to a Space
 // Grammar() Grammar
 // Evaluate psses a request to create or return a Representation of the requested resource
-func (e *EndpointRPC) Evaluate(request *Request) Representation {
+func (e *EndpointRPC) Evaluate(ctx *RequestContext) Representation {
 	var resp Representation
-	err := e.client.Call("Plugin.Evaluate", request, &resp)
+	err := e.client.Call("Plugin.Evaluate", ctx, &resp)
 	if err != nil {
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
@@ -57,9 +57,9 @@ func (e *EndpointRPC) Evaluate(request *Request) Representation {
 }
 
 // Source retrieves representation of resource
-func (e *EndpointRPC) Source(request *Request) Representation {
+func (e *EndpointRPC) Source(ctx *RequestContext) Representation {
 	var resp Representation
-	err := e.client.Call("Plugin.Source", request, &resp)
+	err := e.client.Call("Plugin.Source", ctx, &resp)
 	if err != nil {
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
@@ -71,9 +71,9 @@ func (e *EndpointRPC) Source(request *Request) Representation {
 }
 
 // Sink updates resource to reflect representation
-func (e *EndpointRPC) Sink(request *Request) {
+func (e *EndpointRPC) Sink(ctx *RequestContext) {
 	var resp interface{}
-	err := e.client.Call("Plugin.Sink", request, &resp)
+	err := e.client.Call("Plugin.Sink", ctx, &resp)
 	if err != nil {
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
@@ -83,9 +83,9 @@ func (e *EndpointRPC) Sink(request *Request) {
 
 // New creates a resource and return identifier for created resource
 // If primary representation is included, use it to initialize resource state
-func (e *EndpointRPC) New(request *Request) Identifier {
+func (e *EndpointRPC) New(ctx *RequestContext) Identifier {
 	var resp Identifier
-	err := e.client.Call("Plugin.New", request, &resp)
+	err := e.client.Call("Plugin.New", ctx, &resp)
 	if err != nil {
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
@@ -96,9 +96,9 @@ func (e *EndpointRPC) New(request *Request) Identifier {
 }
 
 // Delete remove the resource from the space that currently contains it
-func (e *EndpointRPC) Delete(request *Request) bool {
+func (e *EndpointRPC) Delete(ctx *RequestContext) bool {
 	var resp bool
-	err := e.client.Call("Plugin.Delete", request, &resp)
+	err := e.client.Call("Plugin.Delete", ctx, &resp)
 	if err != nil {
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
@@ -109,9 +109,9 @@ func (e *EndpointRPC) Delete(request *Request) bool {
 }
 
 // Exists tests to see if resource can be resolved and exists
-func (e *EndpointRPC) Exists(request *Request) bool {
+func (e *EndpointRPC) Exists(ctx *RequestContext) bool {
 	var resp bool
-	err := e.client.Call("Plugin.Exists", request, &resp)
+	err := e.client.Call("Plugin.Exists", ctx, &resp)
 	if err != nil {
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
@@ -140,34 +140,34 @@ type EndpointRPCServer struct {
 	Impl Endpoint
 }
 
-func (s *EndpointRPCServer) CanResolve(request *Request, resp *bool) error {
-	*resp = s.Impl.CanResolve(request)
+func (s *EndpointRPCServer) CanResolve(ctx *RequestContext, resp *bool) error {
+	*resp = s.Impl.CanResolve(ctx)
 	return nil
 }
-func (s *EndpointRPCServer) Evaluate(request *Request, resp *Representation) error {
-	*resp = s.Impl.Evaluate(request)
+func (s *EndpointRPCServer) Evaluate(ctx *RequestContext, resp *Representation) error {
+	*resp = s.Impl.Evaluate(ctx)
 	return nil
 }
 
-func (s *EndpointRPCServer) Source(request *Request, resp *Representation) error {
-	*resp = s.Impl.Source(request)
+func (s *EndpointRPCServer) Source(ctx *RequestContext, resp *Representation) error {
+	*resp = s.Impl.Source(ctx)
 	return nil
 }
-func (s *EndpointRPCServer) Sink(request *Request, resp *interface{}) error {
-	s.Impl.Sink(request)
+func (s *EndpointRPCServer) Sink(ctx *RequestContext, resp *interface{}) error {
+	s.Impl.Sink(ctx)
 	*resp = nil
 	return nil
 }
-func (s *EndpointRPCServer) New(request *Request, resp *Identifier) error {
-	*resp = s.Impl.New(request)
+func (s *EndpointRPCServer) New(ctx *RequestContext, resp *Identifier) error {
+	*resp = s.Impl.New(ctx)
 	return nil
 }
-func (s *EndpointRPCServer) Delete(request *Request, resp *bool) error {
-	*resp = s.Impl.Delete(request)
+func (s *EndpointRPCServer) Delete(ctx *RequestContext, resp *bool) error {
+	*resp = s.Impl.Delete(ctx)
 	return nil
 }
-func (s *EndpointRPCServer) Exists(request *Request, resp *bool) error {
-	*resp = s.Impl.Exists(request)
+func (s *EndpointRPCServer) Exists(ctx *RequestContext, resp *bool) error {
+	*resp = s.Impl.Exists(ctx)
 	return nil
 }
 // func (s *EndpointRPCServer) Type(resp *string) error {

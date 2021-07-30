@@ -1,42 +1,39 @@
 package roc
 
-// type RequestContext struct {
-// 	context.Context
-// 	Request  *Request
-// 	Response Response
-// 	kChannel chan (*RequestContext)
-// }
+type RequestContext struct {
+	Request *Request
 
-// func NewRequestContext(ctx context.Context, identifier Identifier, verb Verb) RequestContext {
-// 	return RequestContext{
-// 		Context: ctx,
-// 		Request: &Request{
-// 			identifier: identifier,
-// 			verb:       verb,
-// 		},
-// 	}
-// }
+	// TODO set as contetx value instead
+	Dispatcher Dispatcher
+}
 
-// func (c *RequestContext) SetResponse(resp Response) {
-// 	c.Response = resp
-// }
+func NewRequestContext(identifier Identifier, verb Verb) *RequestContext {
+	req := NewRequest(identifier, verb, nil)
+	return &RequestContext{
+		// Context: ctx,
+		Request: req,
+	}
+}
 
-// // CreateRequest returns a new request that can be issued to obtain resources or use services
-// func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
-// 	return NewRequest(identifier, Sink, nil)
-// }
+// CreateRequest returns a new request that can be issued to obtain resources or use services
+func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
+	return NewRequest(identifier, Source, nil)
+}
 
-// // func (c *RequestContext) IssueRequest(*Request) Representation {
-// // 	if c.kChannel == nil {
-// // 		log.Println("Kernel dispatch channel is nil")
-// // 		return nil
-// // 	}
+func (c *RequestContext) IssueRequest(req *Request) (Representation, error) {
+	// newCtx, done := context.WithCancel(c.Context)
+	// defer done()
 
-// // 	c.kChannel <- c
+	newReqCtx := NewRequestContext(req.Identifier, c.Request.Verb)
+	newReqCtx.Dispatcher = c.Dispatcher
 
-// // }
+	return c.Dispatcher.Dispatch(newReqCtx)
+
+}
 
 // // Source is a helper method to create and issue a new SOURCE request for the identifier
-// func (c *RequestContext) Source(identifier Identifier) {
-// 	return
-// }
+func (c *RequestContext) Source(identifier Identifier, class RepresentationClass) {
+	req := c.CreateRequest(identifier)
+	req.SetRepresentationClass(class)
+	return
+}

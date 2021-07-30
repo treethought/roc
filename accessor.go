@@ -21,7 +21,6 @@ func NewAccessor(grammar Grammar) *Accessor {
 	return &Accessor{
 		grammar: grammar,
 	}
-
 }
 
 func (e Accessor) Grammar() Grammar {
@@ -35,27 +34,27 @@ func (e Accessor) Type() string {
 	return EndpointTypeAccessor
 }
 
-func (e Accessor) CanResolve(request *Request) bool {
-	return e.Grammar().Match(request.Identifier)
+func (e Accessor) CanResolve(ctx *RequestContext) bool {
+	return e.Grammar().Match(ctx.Request.Identifier)
 }
 
-func (e Accessor) Evaluate(request *Request) Representation {
+func (e Accessor) Evaluate(ctx *RequestContext) Representation {
 
-	switch request.Verb {
+	switch ctx.Request.Verb {
 	case Source:
-		return e.Source(request)
+		return e.Source(ctx)
 	case Sink:
-		e.Sink(request)
+		e.Sink(ctx)
 		return nil
 	case New:
-		return e.New(request)
+		return e.New(ctx)
 	case Delete:
-		return e.Delete(request)
+		return e.Delete(ctx)
 	case Exists:
-		return e.Exists(request)
+		return e.Exists(ctx)
 
 	default:
-		return e.Source(request)
+		return e.Source(ctx)
 
 	}
 }
@@ -64,21 +63,21 @@ func (e Accessor) String() string {
 	return fmt.Sprintf("endpoint://%s", e.Grammar().String())
 }
 
-func (e Accessor) Source(request *Request) Representation {
+func (e Accessor) Source(ctx *RequestContext) Representation {
 	return nil
 }
 
-func (e Accessor) Sink(request *Request) {}
+func (e Accessor) Sink(ctx *RequestContext) {}
 
-func (e Accessor) New(request *Request) Identifier {
+func (e Accessor) New(ctx *RequestContext) Identifier {
 	return ""
 }
-func (e Accessor) Delete(request *Request) bool {
+func (e Accessor) Delete(ctx *RequestContext) bool {
 	return false
 }
-func (e Accessor) Exists(request *Request) bool {
+func (e Accessor) Exists(ctx *RequestContext) bool {
 	return false
 }
-func (e Accessor) Transrept(request *Request) Representation {
+func (e Accessor) Transrept(ctx *RequestContext) Representation {
 	return nil
 }

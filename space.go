@@ -25,15 +25,13 @@ func (s Space) Identifier() Identifier {
 }
 
 
-func (s Space) Resolve(request *Request, c chan (Endpoint)) {
+func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
 	log.Printf("interrogating endpoints of space: %s", s.Identifier())
 	for _, e := range s.Endpoints {
 
         log.Print("calling plugin")
-        res := e.Impl.CanResolve(request)
-        log.Print("RESOLVABLE: ", res)
 
-		if e.Impl.CanResolve(request) {
+		if e.Impl.CanResolve(ctx) {
 			log.Print("endpoint affirmed to resolve!: ")
 			c <- e.Impl
 		}

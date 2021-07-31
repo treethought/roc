@@ -23,7 +23,7 @@ func DispatchRequest(ctx *RequestContext) (Representation, error) {
 			Level:      hclog.Trace,
 			Output:     os.Stderr,
 			JSONFormat: false,
-			Name:       "dispatch-client",
+			Name:       "dispatcher",
 			Color:      hclog.ForceColor,
 		}),
 	})

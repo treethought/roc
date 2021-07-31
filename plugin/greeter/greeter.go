@@ -33,14 +33,14 @@ func New(grammar roc.Grammar) *MyEndpoint {
 // Source retrieves representation of resource
 func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
 	e.logger.Debug("Sourcing", ctx.Request.Identifier)
-    e.logger.Error("Making subrequest", "target", ctx.Request.Identifier)
+	e.logger.Error("Making subrequest", "target", ctx.Request.Identifier)
 
-    name := "heh"
-    // name, err := ctx.Source("res://namer", nil)
-    // if err != nil {
-    //     e.logger.Error("failed to dispatch request", "error", err)
-    // }
-    return fmt.Sprintf("hello world: %s", name)
+	name := "heh"
+	// name, err := ctx.Source("res://namer", nil)
+	// if err != nil {
+	//     e.logger.Error("failed to dispatch request", "error", err)
+	// }
+	return fmt.Sprintf("hello world: %s", name)
 }
 
 // handshakeConfigs are used to just do a basic handshake between

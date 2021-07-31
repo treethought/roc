@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/hashicorp/go-hclog"
@@ -18,18 +19,15 @@ var handshakeConfig = plugin.HandshakeConfig{
 	MagicCookieValue: "hello",
 }
 
-
-
-
 type DefaultDispatcher struct {
-	logger   hclog.Logger
+	logger hclog.Logger
 }
 
 func (d DefaultDispatcher) resolveEndpoint(ctx *roc.RequestContext) roc.Endpoint {
-    d.logger.Info("resolving endpoint")
+	d.logger.Info("resolving endpoint")
 	c := make(chan (roc.Endpoint))
 	for _, s := range ctx.Scope.Spaces {
-        d.logger.Info("checking space: ", s.Identifier())
+		d.logger.Info("checking space: ", s.Identifier())
 		go s.Resolve(ctx, c)
 	}
 
@@ -37,23 +35,14 @@ func (d DefaultDispatcher) resolveEndpoint(ctx *roc.RequestContext) roc.Endpoint
 }
 
 func (d DefaultDispatcher) Dispatch(ctx *roc.RequestContext) (roc.Representation, error) {
-	d.logger.Info("dispatching request", "identifier", ctx.Request.Identifier, "spaces", ctx.Scope.Spaces)
+	d.logger.Error("#################")
+	d.logger.Error("DISPATCH PLUGIN RECEIVED CALL")
+	log.Printf("WITH SPACES: %d", len(ctx.Scope.Spaces))
+	log.Printf("WITH SPACES ENDPOINTS: %d", len(ctx.Scope.Spaces[0].Endpoints))
 
+	d.logger.Error("dispatching request", "identifier", ctx.Request.Identifier, "spaces", ctx.Scope.Spaces)
 
-    
-
-	// ctx.Dispatcher = d
 	endpoint := d.resolveEndpoint(ctx)
-
-	// ctx.Dispatcher = k.DispatchClient
-
-	// phys, ok := endpoint.(PhysicalEndpoint)
-	// if !ok {
-	//     log.Println("resolved endpoint is not a plugin")
-	//     return nil
-	// }
-
-	// log.Printf("resolved to endpoint: %s", phys.Impl.New)
 
 	// TODO route verbs to methods
 	rep := endpoint.Source(ctx)
@@ -61,27 +50,32 @@ func (d DefaultDispatcher) Dispatch(ctx *roc.RequestContext) (roc.Representation
 
 }
 
-
-
 func main() {
-    // gob.Register(roc.EndpointRPC{})
+	// fmt.Println("STARTING DISPATCHER")
+	// gob.Register(roc.EndpointRPC{})
 	d := DefaultDispatcher{
 		logger: hclog.New(&hclog.LoggerOptions{
 			Level:      hclog.Trace,
 			Output:     os.Stderr,
-			JSONFormat: true,
+			JSONFormat: false,
 		}),
-    }
-
-	d.logger.Debug("starting dispatcher")
-
-	// pluginMap is the map of plugins we can dispense.
-	var pluginMap = map[string]plugin.Plugin{
-		"dispatcher": &roc.DispatchPlugin{Impl: d},
 	}
 
+	hclog.SetDefault(d.logger)
+
+	// var pluginMap = map[string]plugin.Plugin{
+	// 	"endpoint":   &roc.EndpointPlugin{},
+	// 	"dispatcher": &d,
+	// }
+
+	// d.logger.Debug("BEGINGINS SERVER")
 	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: handshakeConfig,
-		Plugins:         pluginMap,
+		HandshakeConfig: roc.Handshake,
+		// Plugins:         roc.PluginMap,
+		Plugins: map[string]plugin.Plugin{
+			"dispatcher": &roc.DispatcherPlugin{Impl: &d},
+		},
 	})
+	// d.logger.Error("SERVE STOPPED")
+
 }

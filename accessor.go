@@ -1,13 +1,15 @@
 package roc
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const EndpointTypeAccessor string = "accessor"
 
 // EndpointAccessor is an endpoint that provides access
 // to a set of resources or services within a space
 type EndpointAccessor interface {
-	Resource
+	// shared.Resource
 	Endpoint
 }
 

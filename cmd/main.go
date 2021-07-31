@@ -10,22 +10,20 @@ import (
 func main() {
 
 	k := roc.NewKernel()
-
-	greeter := roc.NewPhysicalEndpoint("./plugin/greeter/greeter")
-
-	namer := roc.NewPhysicalEndpoint("./plugin/namer/namer")
-
-	space := roc.NewSpace("space://myspace", greeter, namer)
+	space := roc.NewSpace("space://myspace",
+		"./plugin/greeter/greeter",
+		"./plugin/namer/namer",
+	)
 
 	rstart := time.Now()
 	k.Register(space)
 	fmt.Println("reg dur")
 	fmt.Println(time.Since(rstart).String())
 
-	k.StartDispatcher()
+	// k.StartDispatcher()
 
 	ctx := roc.NewRequestContext("res://hello-world", roc.Source)
-    // ctx.Dispatcher = k.DispatchClient
+	// ctx.Dispatcher = k.DispatchClient
 
 	start := time.Now()
 	rep, err := k.Dispatch(ctx)

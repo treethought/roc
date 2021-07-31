@@ -1,48 +1,44 @@
 package roc
 
 import (
-	"log"
+	"os"
 	"os/exec"
 
 	"github.com/hashicorp/go-plugin"
 )
 
-type PhysicalEndpoint struct {
-	client *plugin.Client
-	rpc    plugin.ClientProtocol
-	Impl   Endpoint
-}
-
-func NewPhysicalEndpoint(path string) *PhysicalEndpoint {
-	endpoint := &PhysicalEndpoint{}
+func NewPhysicalEndpoint(path string) Endpoint {
+	// endpoint := &PhysicalEndpoint{}
 	// We're a host! Start by launching the plugin pss.
-	endpoint.client = plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: handshakeConfig,
-		Plugins:         pluginMap,
+	client := plugin.NewClient(&plugin.ClientConfig{
+		HandshakeConfig: Handshake,
+		Plugins:         PluginMap,
 		Cmd:             exec.Command(path),
 		// Logger:          logger,
 	})
 
 	// Connect via RPC
-	rpcClient, err := endpoint.client.Client()
+	rpcClient, err := client.Client()
 	if err != nil {
-		log.Fatal(err)
+		log.Error("failed to connect via rpc", "endpoint", path, "error", err)
+		os.Exit(1)
 	}
-	endpoint.rpc = rpcClient
+	// endpoint.rpc = rpcClient
 
 	// RequestContext the plugin
 	raw, err := rpcClient.Dispense("endpoint")
 	if err != nil {
-		log.Fatal(err)
+		log.Error("failed to dispense endpoint", "endpoint", path, "error", err)
+		os.Exit(1)
 	}
 
 	// We should have a Greeter now! This feels like a normal interface
 	// implementation but is in fact over an RPC connection.
-	endpoint.Impl = raw.(Endpoint)
+	endpoint := raw.(Endpoint)
 	return endpoint
 
 }
 
-func (e *PhysicalEndpoint) Kill() {
-	e.client.Kill()
-}
+// func (e *PhysicalEndpoint) Kill() {
+// 	e.client.Kill()
+// }

@@ -27,6 +27,7 @@ func (r *Request) SetRepresentationClass(class RepresentationClass) {
 	r.RepresentationClass = class
 }
 
+
 // // Identifier returns the identifier of the requested resource
 // func (r Request) Identifier() Identifier {
 // 	return r.identifier

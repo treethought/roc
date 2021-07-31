@@ -1,6 +1,7 @@
 package roc
 
 import (
+	"fmt"
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
@@ -26,6 +27,8 @@ type Endpoint interface {
 // Here is an implementation that talks over RPC
 type EndpointRPC struct {
 	client *rpc.Client
+    Dummy string
+
 }
 
 // CanResolve responds affirmatively if the endpoint can handle the request based on the identifier
@@ -33,6 +36,7 @@ func (e *EndpointRPC) CanResolve(ctx *RequestContext) bool {
 	var resp bool
 	err := e.client.Call("Plugin.CanResolve", ctx, &resp)
 	if err != nil {
+        fmt.Println(err)
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
 		panic(err)

@@ -11,23 +11,28 @@ func main() {
 
 	k := roc.NewKernel()
 
-	endpoint := roc.NewPhysicalEndpoint("./plugin/my_endpoint")
+	greeter := roc.NewPhysicalEndpoint("./plugin/greeter/greeter")
 
-	space := roc.NewSpace("space://myspace", endpoint)
+	namer := roc.NewPhysicalEndpoint("./plugin/namer/namer")
+
+	space := roc.NewSpace("space://myspace", greeter, namer)
 
 	rstart := time.Now()
 	k.Register(space)
 	fmt.Println("reg dur")
 	fmt.Println(time.Since(rstart).String())
 
-	ctx := roc.NewRequestContext("res://hello-world", roc.Source)
+	k.StartDispatcher()
 
-	fmt.Println("dispatching request")
+	ctx := roc.NewRequestContext("res://hello-world", roc.Source)
+    // ctx.Dispatcher = k.DispatchClient
+
 	start := time.Now()
 	rep, err := k.Dispatch(ctx)
 	if err != nil {
 		panic(err)
 	}
+
 	fmt.Println(rep)
 	fmt.Println(time.Since(start).String())
 

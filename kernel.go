@@ -1,9 +1,9 @@
 package roc
 
 import (
-	"log"
-	"os/exec"
+	"os"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
 
@@ -19,7 +19,8 @@ var handshakeConfig = plugin.HandshakeConfig{
 
 // pluginMap is the map of plugins we can dispense.
 var pluginMap = map[string]plugin.Plugin{
-	"endpoint": &EndpointPlugin{},
+	"endpoint":   &EndpointPlugin{},
+	"dispatcher": &DispatchPlugin{},
 }
 
 type Resolver interface {
@@ -33,68 +34,99 @@ type Evaluator interface {
 	Identifier() Identifier
 }
 
-type PhysicalEndpoint struct {
-	client *plugin.Client
-	rpc    plugin.ClientProtocol
-	Impl   Endpoint
-}
-
-func NewPhysicalEndpoint(path string) *PhysicalEndpoint {
-	endpoint := &PhysicalEndpoint{}
-	// We're a host! Start by launching the plugin process.
-	endpoint.client = plugin.NewClient(&plugin.ClientConfig{
-		HandshakeConfig: handshakeConfig,
-		Plugins:         pluginMap,
-		Cmd:             exec.Command(path),
-		// Logger:          logger,
-	})
-
-	// Connect via RPC
-	rpcClient, err := endpoint.client.Client()
-	if err != nil {
-		log.Fatal(err)
-	}
-	endpoint.rpc = rpcClient
-
-	// RequestContext the plugin
-	raw, err := rpcClient.Dispense("endpoint")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// We should have a Greeter now! This feels like a normal interface
-	// implementation but is in fact over an RPC connection.
-	endpoint.Impl = raw.(Endpoint)
-	return endpoint
-
-}
-
-func (e *PhysicalEndpoint) Kill() {
-	e.client.Kill()
-}
-
-// type Dispatcher struct {
-// 	resolvers   []Resolver
-// 	evalutators []Evaluator
-// }
-
 type Kernel struct {
-	Spaces   map[Identifier]Resolver
-	receiver chan (*RequestContext)
-	client   *plugin.Client
+	Spaces     map[Identifier]Space
+	receiver   chan (*RequestContext)
+	Dispatcher Dispatcher
+	logger     hclog.Logger
 }
 
 func NewKernel() *Kernel {
 	k := &Kernel{
-		Spaces:   make(map[Identifier]Resolver),
+		Spaces:   make(map[Identifier]Space),
 		receiver: make(chan *RequestContext),
+		logger: hclog.New(&hclog.LoggerOptions{
+			Level:      hclog.Trace,
+			Output:     os.Stderr,
+			JSONFormat: false,
+			Name:       "kernel",
+		}),
 	}
 
 	return k
 }
 
-func (k *Kernel) Register(space Resolver) {
-	log.Printf("registering endpoint to space: %s", space.Identifier())
+func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
+	k.logger.Info("Dispatching request")
+	for _, s := range k.Spaces {
+		k.logger.Debug("adding to scope", "space", s.Identifier())
+		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
+		ctx.Scope.EndpointClients = append(ctx.Scope.EndpointClients, s.Endpoints...)
+	}
+	// if k.Dispatcher {
+	// 	return nil, fmt.Errorf("dispatcher not set")
+	// }
+	// ctx.Dispatcher = k.DispatcherClient
+	return k.Dispatcher.Dispatch(ctx)
+	// k.Dispatcher.= MainDispatcher{
+	// 	Spaces: k.Spaces,
+	// }
+	// return k.Dispatcher.Dispatch(ctx)
+}
+
+func (k *Kernel) StartDispatcher() {
+	k.logger.Info("starting dispatcher")
+
+	k.Dispatcher = NewPhysicalDispatcher().Impl
+
+	// 	var pluginMap = map[string]plugin.Plugin{
+	// 		"dispatcher": &DispatchPlugin{},
+	//         "endpoint": &EndpointPlugin{},
+	// 	}
+
+	// 	// plugin.Serve(&plugin.ServeConfig{
+	// 	// 	HandshakeConfig: handshakeConfig,
+	// 	// 	Plugins:         pluginMap,
+	// 	// 	// Cmd:             exec.Command("./dispatcher/dispatcher"),
+	// 	// 	Logger: hclog.New(&hclog.LoggerOptions{
+	// 	// 		Level:      hclog.Trace,
+	// 	// 		Output:     os.Stderr,
+	// 	// 		JSONFormat: false,
+	// 	// 		Name:       "dispatch-server",
+	// 	// 	}),
+	// 	// })
+
+	// 	// We're a host! Start by launching the plugin process.
+	// 	client := plugin.NewClient(&plugin.ClientConfig{
+	// 		HandshakeConfig: handshakeConfig,
+	// 		Plugins:         pluginMap,
+	// 		Cmd:             exec.Command("./dispatcher/dispatcher"),
+	// 		// Logger:          logger,
+	// 	})
+	// 	// // defer client.Kill()
+
+	// 	// // Connect via RPC
+	// 	rpcClient, err := client.Client()
+	// 	if err != nil {
+	// 		log.Fatal(err)
+
+	// 	}
+
+	// 	// // Request the plugin
+	// 	raw, err := rpcClient.Dispense("dispatcher")
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+
+	// 	// // // We should have a Greeter now! This feels like a normal interface
+	// 	// // // implementation but is in fact over an RPC connection.
+	// 	k.Dispatcher = raw.(Dispatcher)
+}
+
+func (k *Kernel) Register(space Space) {
+	k.logger.Info("registering space",
+		"space", space.Identifier(),
+	)
 	k.Spaces[space.Identifier()] = space
 
 	// space.Bind(*endpoint)
@@ -104,42 +136,14 @@ func (k *Kernel) Receiver() chan (*RequestContext) {
 	return k.receiver
 }
 
-func (k Kernel) startReceiver() {
-	for {
-		incoming := <-k.receiver
-		k.Dispatch(incoming)
-	}
-}
+// func (k Kernel) startReceiver() {
+// 	for {
+// 		incoming := <-k.receiver
+// 		k.Dispatch(incoming)
+// 	}
+// }
 
 func (k Kernel) buildResolveRequestContext(request *Request) *RequestContext {
 	return NewRequestContext(request.Identifier, Resolve)
-
-}
-
-func (k Kernel) resolveEndpoint(ctx *RequestContext) Endpoint {
-	c := make(chan (Endpoint))
-	for _, s := range k.Spaces {
-		go s.Resolve(ctx, c)
-	}
-
-	return <-c
-}
-
-func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
-	log.Printf("dispatching request for identifer: %s", ctx.Request.Identifier)
-
-	endpoint := k.resolveEndpoint(ctx)
-
-	// phys, ok := endpoint.(PhysicalEndpoint)
-	// if !ok {
-	//     log.Println("resolved endpoint is not a plugin")
-	//     return nil
-	// }
-
-	// log.Printf("resolved to endpoint: %s", phys.Impl.New)
-
-	// TODO route verbs to methods
-	rep := endpoint.Source(ctx)
-	return rep, nil
 
 }

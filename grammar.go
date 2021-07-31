@@ -1,7 +1,6 @@
 package roc
 
 import (
-	"log"
 	"net/url"
 	"regexp"
 )
@@ -18,17 +17,24 @@ type Grammar struct {
 }
 
 func (g Grammar) String() string {
-    if g.Base == nil {
-        return ""
-    }
+	if g.Base == nil {
+		return ""
+	}
 	return g.Base.String()
 }
 
 func (g Grammar) Match(i Identifier) bool {
-	log.Printf("matching grammar %s against %s", g.String(), i)
+	log.Debug("testing grammar",
+		"grammar", g.String(),
+		"identitifier", i,
+	)
 	uri, err := url.Parse(string(i))
 	if err != nil {
-		log.Printf("failed to parse identifier %s", uri.String())
+		log.Error("failed to parse identifier",
+			"identifier", i,
+			"error", err,
+		)
+
 		return false
 	}
 
@@ -43,7 +49,10 @@ func (g Grammar) Match(i Identifier) bool {
 	if uri.Path != g.Base.Path {
 		return false
 	}
-	log.Printf("%s matches %s", uri.String(), g.Base.String())
+	log.Info("grammar matches",
+		"grammar", g.Base.String(),
+		"identifier", i,
+	)
 
 	return true
 }

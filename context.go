@@ -1,11 +1,7 @@
 package roc
 
-import "fmt"
-
 type RequestScope struct {
 	Spaces []Space
-    EndpointClients []Endpoint
-
 }
 
 type RequestContext struct {
@@ -13,8 +9,8 @@ type RequestContext struct {
 
 	// TODO set as contetx value instead
 	// Dispatcher Dispatcher
-	Dispatcher DispatcherClient
-	Scope RequestScope
+	Dispatcher Dispatcher
+	Scope      RequestScope
 }
 
 func NewRequestContext(identifier Identifier, verb Verb) *RequestContext {
@@ -37,15 +33,16 @@ func (c *RequestContext) IssueRequest(req *Request) (Representation, error) {
 	// }
 
 	newReqCtx := NewRequestContext(req.Identifier, c.Request.Verb)
-	newReqCtx.Dispatcher = c.Dispatcher
-    newReqCtx.Scope = c.Scope
-    if len(newReqCtx.Scope.Spaces) == 0 {
-        return nil, fmt.Errorf("request scope has no spaces")
-    }
-    newReqCtx.Scope.EndpointClients = c.Scope.EndpointClients
+	newReqCtx.Scope = c.Scope
+	// if len(newReqCtx.Scope.Spaces) == 0 {
+	//     return nil, fmt.Errorf("request scope has no spaces")
+	// }
+	// newReqCtx.Scope.EndpointClients = c.Scope.EndpointClients
 
+	return DispatchRequest(newReqCtx)
+	// dispatcher := NewPhysicalDispatcher()
 
-	return c.Dispatcher.Dispatch(newReqCtx)
+	// return dispatcher.Dispatch(newReqCtx)
 
 }
 

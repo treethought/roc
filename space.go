@@ -1,25 +1,30 @@
 package roc
 
 import (
-	"log"
+	"github.com/hashicorp/go-hclog"
 )
+
+var log = hclog.Default()
 
 type Space struct {
 	identifier Identifier `yaml:"identifier,omitempty"`
-	Endpoints  []Endpoint `yaml:"endpoints,omitempty"`
 	Imports    []Space    `yaml:"imports,omitempty"`
 	channel    chan (*Request)
+
+	// use identifier instead of string, should reference
+	// plugin binaries as a res:// or file://
+	Endpoints []string
 }
 
-func NewSpace(identifier Identifier, endpoints ...*PhysicalEndpoint) Space {
+func NewSpace(identifier Identifier, endpointPaths ...string) Space {
 	s := Space{
 		identifier: identifier,
 		Imports:    []Space{},
+		Endpoints:  endpointPaths,
 		channel:    make(chan *Request),
 	}
-	for _, e := range endpoints {
-		s.Endpoints = append(s.Endpoints, e.Impl)
-	}
+
+	log.Debug("created space", "identifier", s.Identifier(), "endpoints", s.Endpoints)
 	return s
 }
 
@@ -28,14 +33,14 @@ func (s Space) Identifier() Identifier {
 }
 
 func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
-	log.Printf("interrogating endpoints of space: %s", s.Identifier())
-	for _, e := range s.Endpoints {
-
-		log.Print("calling plugin")
-		log.Printf("%+v", ctx.Dispatcher)
+	log.Debug("interrogating endpoints",
+		"space", s.Identifier(),
+	)
+	for _, ePath := range s.Endpoints {
+		e := NewPhysicalEndpoint(ePath)
 
 		if e.CanResolve(ctx) {
-			log.Print("endpoint affirmed to resolve!: ")
+			log.Info("resolve affirmed", "endpoint", ePath)
 			c <- e
 		}
 	}

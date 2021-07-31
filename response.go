@@ -46,7 +46,5 @@ type Response struct {
 	expiryTime     uint64
 	noCache        bool
 	header         http.Header
-    Affirmation bool
+	Affirmation    bool
 }
-
-

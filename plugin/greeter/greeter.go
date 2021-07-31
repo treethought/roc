@@ -14,8 +14,7 @@ import (
 // Here is a real implementation of Greeter
 type MyEndpoint struct {
 	*roc.Accessor
-	logger     hclog.Logger
-	Identifier roc.Identifier
+	logger hclog.Logger
 }
 
 func New(grammar roc.Grammar) *MyEndpoint {
@@ -35,23 +34,13 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
 	e.logger.Debug("Sourcing", ctx.Request.Identifier)
 	e.logger.Error("Making subrequest", "target", ctx.Request.Identifier)
 
-	name := "heh"
-	// name, err := ctx.Source("res://namer", nil)
-	// if err != nil {
-	//     e.logger.Error("failed to dispatch request", "error", err)
-	// }
+	name, err := ctx.Source("res://namer", nil)
+	if err != nil {
+		e.logger.Error("failed to dispatch request", "error", err)
+	}
 	return fmt.Sprintf("hello world: %s", name)
 }
 
-// handshakeConfigs are used to just do a basic handshake between
-// a plugin and host. If the handshake fails, a user friendly error is shown.
-// This prevents users from executing bad plugins or executing a plugin
-// directory. It is a UX feature, not a security feature.
-var handshakeConfig = plugin.HandshakeConfig{
-	ProtocolVersion:  1,
-	MagicCookieKey:   "BASIC_PLUGIN",
-	MagicCookieValue: "hello",
-}
 
 func main() {
 
@@ -65,7 +54,10 @@ func main() {
 	}
 	endpoint := New(grammar)
 
-	endpoint.logger.Debug("starting plugin", "identifier", endpoint.Grammar().String())
+	endpoint.logger.Debug("starting plugin",
+		"grammar", endpoint.Grammar().String(),
+		"identifier", endpoint.Identifier(),
+	)
 
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{
@@ -73,7 +65,7 @@ func main() {
 	}
 
 	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: handshakeConfig,
+		HandshakeConfig: roc.Handshake,
 		Plugins:         pluginMap,
 	})
 }

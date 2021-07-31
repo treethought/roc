@@ -2,6 +2,7 @@ package roc
 
 import (
 	"fmt"
+	"os"
 )
 
 const EndpointTypeAccessor string = "accessor"
@@ -25,6 +26,16 @@ func NewAccessor(grammar Grammar) *Accessor {
 	}
 }
 
+func (a *Accessor) Identifier() Identifier {
+	path, err := os.Executable()
+	if err != nil {
+		a.Logger.Error("unable to locate identifier", "error", err)
+		return ""
+	}
+
+	return Identifier(fmt.Sprintf("accessor://%s", path))
+}
+
 func (e Accessor) Grammar() Grammar {
 	return e.grammar
 }
@@ -34,6 +45,29 @@ func (e *Accessor) SetGrammar(grammar Grammar) {
 
 func (e Accessor) Type() string {
 	return EndpointTypeAccessor
+}
+
+func (e Accessor) String() string {
+	return fmt.Sprintf("endpoint://%s", e.Grammar().String())
+}
+
+func (e Accessor) Source(ctx *RequestContext) Representation {
+	return nil
+}
+
+func (e Accessor) Sink(ctx *RequestContext) {}
+
+func (e Accessor) New(ctx *RequestContext) Identifier {
+	return ""
+}
+func (e Accessor) Delete(ctx *RequestContext) bool {
+	return false
+}
+func (e Accessor) Exists(ctx *RequestContext) bool {
+	return false
+}
+func (e Accessor) Transrept(ctx *RequestContext) Representation {
+	return nil
 }
 
 func (e Accessor) CanResolve(ctx *RequestContext) bool {
@@ -59,27 +93,4 @@ func (e Accessor) Evaluate(ctx *RequestContext) Representation {
 		return e.Source(ctx)
 
 	}
-}
-
-func (e Accessor) String() string {
-	return fmt.Sprintf("endpoint://%s", e.Grammar().String())
-}
-
-func (e Accessor) Source(ctx *RequestContext) Representation {
-	return nil
-}
-
-func (e Accessor) Sink(ctx *RequestContext) {}
-
-func (e Accessor) New(ctx *RequestContext) Identifier {
-	return ""
-}
-func (e Accessor) Delete(ctx *RequestContext) bool {
-	return false
-}
-func (e Accessor) Exists(ctx *RequestContext) bool {
-	return false
-}
-func (e Accessor) Transrept(ctx *RequestContext) Representation {
-	return nil
 }

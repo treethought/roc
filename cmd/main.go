@@ -15,12 +15,7 @@ func main() {
 		"./plugin/namer/namer",
 	)
 
-	rstart := time.Now()
 	k.Register(space)
-	fmt.Println("reg dur")
-	fmt.Println(time.Since(rstart).String())
-
-	// k.StartDispatcher()
 
 	ctx := roc.NewRequestContext("res://hello-world", roc.Source)
 	// ctx.Dispatcher = k.DispatchClient

@@ -5,35 +5,38 @@ import (
 )
 
 type Space struct {
-	identifier Identifier         `yaml:"identifier,omitempty"`
-	Endpoints  []*PhysicalEndpoint `yaml:"endpoints,omitempty"`
-	Imports    []Space            `yaml:"imports,omitempty"`
+	identifier Identifier `yaml:"identifier,omitempty"`
+	Endpoints  []Endpoint `yaml:"endpoints,omitempty"`
+	Imports    []Space    `yaml:"imports,omitempty"`
 	channel    chan (*Request)
 }
 
 func NewSpace(identifier Identifier, endpoints ...*PhysicalEndpoint) Space {
-	return Space{
+	s := Space{
 		identifier: identifier,
-		Endpoints:  endpoints,
 		Imports:    []Space{},
 		channel:    make(chan *Request),
 	}
+	for _, e := range endpoints {
+		s.Endpoints = append(s.Endpoints, e.Impl)
+	}
+	return s
 }
 
 func (s Space) Identifier() Identifier {
-    return s.identifier
+	return s.identifier
 }
-
 
 func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
 	log.Printf("interrogating endpoints of space: %s", s.Identifier())
 	for _, e := range s.Endpoints {
 
-        log.Print("calling plugin")
+		log.Print("calling plugin")
+		log.Printf("%+v", ctx.Dispatcher)
 
-		if e.Impl.CanResolve(ctx) {
+		if e.CanResolve(ctx) {
 			log.Print("endpoint affirmed to resolve!: ")
-			c <- e.Impl
+			c <- e
 		}
 	}
 }

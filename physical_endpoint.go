@@ -7,8 +7,12 @@ import (
 	"github.com/hashicorp/go-plugin"
 )
 
+type PhysicalEndpoint struct {
+	Endpoint
+	Client *plugin.Client
+}
+
 func NewPhysicalEndpoint(path string) Endpoint {
-	// endpoint := &PhysicalEndpoint{}
 	// We're a host! Start by launching the plugin pss.
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: Handshake,
@@ -35,7 +39,10 @@ func NewPhysicalEndpoint(path string) Endpoint {
 	// We should have a Greeter now! This feels like a normal interface
 	// implementation but is in fact over an RPC connection.
 	endpoint := raw.(Endpoint)
-	return endpoint
+	return PhysicalEndpoint{
+		Endpoint: endpoint,
+		Client:   client,
+	}
 
 }
 

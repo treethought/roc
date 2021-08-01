@@ -2,6 +2,7 @@ package roc
 
 import (
 	"net/url"
+	"os"
 	"regexp"
 )
 
@@ -14,6 +15,19 @@ type grammar interface {
 type Grammar struct {
 	Base  *url.URL
 	parts []grammarElement
+}
+
+func NewGrammar(base string) Grammar {
+	uri, err := url.Parse(base)
+	if err != nil {
+		log.Error(err.Error())
+		os.Exit(1)
+	}
+
+	grammar := Grammar{
+		Base: uri,
+	}
+	return grammar
 }
 
 func (g Grammar) String() string {

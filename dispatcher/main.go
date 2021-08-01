@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/go-hclog"
@@ -30,6 +31,12 @@ func (d DefaultDispatcher) Dispatch(ctx *roc.RequestContext) (roc.Representation
 	)
 
 	endpoint := d.resolveEndpoint(ctx)
+    phys, ok := endpoint.(roc.PhysicalEndpoint)
+    if !ok {
+        return nil, fmt.Errorf("resolved to non-physical endpoint")
+    }
+
+    defer phys.Client.Kill()
 
 	d.logger.Info("dispatching request",
 		"identifier", ctx.Request.Identifier,
@@ -50,8 +57,6 @@ func main() {
 			Name:       "dispatcher",
 		}),
 	}
-
-	hclog.SetDefault(d.logger)
 
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: roc.Handshake,

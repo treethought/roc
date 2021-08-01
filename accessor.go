@@ -3,26 +3,31 @@ package roc
 import (
 	"fmt"
 	"os"
+
+	"github.com/hashicorp/go-hclog"
 )
 
 const EndpointTypeAccessor string = "accessor"
 
-// EndpointAccessor is an endpoint that provides access
-// to a set of resources or services within a space
-type EndpointAccessor interface {
-	// shared.Resource
-	Endpoint
-}
-
 // Accessor is a struct implementing the default behavior for an empty EndpointAccessor
-// This type is useful for embedding custom implementations of EndpointAccessor
+// This type is useful for embedding with custom implementations of EndpointAccessor
 type Accessor struct {
 	grammar Grammar `yaml:"grammar,omitempty"`
+	Name    string
+	Logger  hclog.Logger
 }
 
-func NewAccessor(grammar Grammar) *Accessor {
+func NewAccessor(name string, grammar Grammar) *Accessor {
 	return &Accessor{
 		grammar: grammar,
+		Name:    name,
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Level:      hclog.Info,
+			Output:     os.Stderr,
+			JSONFormat: false,
+			Name:       name,
+			Color:      hclog.ForceColor,
+		}),
 	}
 }
 
@@ -34,6 +39,10 @@ func (a *Accessor) Identifier() Identifier {
 	}
 
 	return Identifier(fmt.Sprintf("accessor://%s", path))
+}
+
+func (a *Accessor) SetLogger(l hclog.Logger) {
+	a.Logger = l
 }
 
 func (e Accessor) Grammar() Grammar {

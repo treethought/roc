@@ -7,6 +7,28 @@ import (
 	"github.com/hashicorp/go-plugin"
 )
 
+func Serve(e Endpoint) {
+	a, ok := e.(Accessor)
+	if ok {
+		a.Logger.Debug("starting accessor",
+			"name", a.Name,
+			"grammar", a.Grammar().String(),
+			"identifier", a.Identifier(),
+		)
+	}
+
+	// pluginMap is the map of plugins we can dispense.
+	var pluginMap = map[string]plugin.Plugin{
+		"endpoint": &EndpointPlugin{Impl: e},
+	}
+
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: Handshake,
+		Plugins:         pluginMap,
+	})
+
+}
+
 // Endpoint represents the gateway between a logical resource and the computation
 type Endpoint interface {
 	Resource

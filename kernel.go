@@ -18,7 +18,7 @@ func NewKernel() *Kernel {
 		Spaces:   make(map[Identifier]Space),
 		receiver: make(chan *RequestContext),
 		logger: hclog.New(&hclog.LoggerOptions{
-			Level:      hclog.Trace,
+			Level:      hclog.Info,
 			Output:     os.Stderr,
 			JSONFormat: false,
 			Name:       "kernel",

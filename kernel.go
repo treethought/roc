@@ -41,11 +41,13 @@ func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 	return DispatchRequest(ctx)
 }
 
-func (k *Kernel) Register(space Space) {
-	k.logger.Info("registering space",
-		"space", space.Identifier,
-	)
-	k.Spaces[space.Identifier] = space
+func (k *Kernel) Register(spaces ...Space) {
+	for _, space := range spaces {
+		k.logger.Info("registering space",
+			"space", space.Identifier,
+		)
+		k.Spaces[space.Identifier] = space
+	}
 
 }
 

@@ -7,34 +7,29 @@ import (
 var log = hclog.Default()
 
 type Space struct {
-	identifier Identifier `yaml:"identifier,omitempty"`
+	Identifier Identifier `yaml:"identifier,omitempty"`
 	Imports    []Space    `yaml:"imports,omitempty"`
-	channel    chan (*Request)
-
 	// use identifier instead of string, should reference
 	// plugin binaries as a res:// or file://
 	Endpoints []string
+	channel   chan (*Request)
 }
 
 func NewSpace(identifier Identifier, endpointPaths ...string) Space {
 	s := Space{
-		identifier: identifier,
+		Identifier: identifier,
 		Imports:    []Space{},
 		Endpoints:  endpointPaths,
 		channel:    make(chan *Request),
 	}
 
-	log.Debug("created space", "identifier", s.Identifier(), "endpoints", s.Endpoints)
+	log.Debug("created space", "identifier", s.Identifier, "endpoints", s.Endpoints)
 	return s
 }
 
-func (s Space) Identifier() Identifier {
-	return s.identifier
-}
-
 func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
-	log.Debug("interrogating endpoints",
-		"space", s.Identifier(),
+	log.Info("interrogating endpoints",
+		"space", s.Identifier,
 	)
 	for _, ePath := range s.Endpoints {
 		e := NewPhysicalEndpoint(ePath)

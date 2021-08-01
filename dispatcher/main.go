@@ -17,7 +17,7 @@ func (d DefaultDispatcher) resolveEndpoint(ctx *roc.RequestContext) roc.Endpoint
 	d.logger.Info("resolving endpoint")
 	c := make(chan (roc.Endpoint))
 	for _, s := range ctx.Scope.Spaces {
-		d.logger.Debug("checking space: ", "space", s.Identifier())
+		d.logger.Debug("checking space: ", "space", s.Identifier)
 		go s.Resolve(ctx, c)
 	}
 

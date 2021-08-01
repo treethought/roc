@@ -31,7 +31,7 @@ func NewKernel() *Kernel {
 
 func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 	for _, s := range k.Spaces {
-		k.logger.Debug("adding to scope", "space", s.Identifier())
+		k.logger.Debug("adding to scope", "space", s.Identifier)
 		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
 	}
 	k.logger.Debug("dispatching request from kernel",
@@ -43,9 +43,9 @@ func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 
 func (k *Kernel) Register(space Space) {
 	k.logger.Info("registering space",
-		"space", space.Identifier(),
+		"space", space.Identifier,
 	)
-	k.Spaces[space.Identifier()] = space
+	k.Spaces[space.Identifier] = space
 
 }
 

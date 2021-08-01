@@ -5,8 +5,8 @@ SHELL := /bin/bash
 
 
 plugins:
-	go build -o ./plugin/greeter ./plugin/greeter/greeter.go
-	go build -o ./plugin/namer ./plugin/namer/namer.go
+	go build -o ./bin/greeter ./examples/greeter
+	go build -o ./bin/namer ./examples/namer
 	go build -o ./dispatcher/dispatcher ./dispatcher/main.go
 
 

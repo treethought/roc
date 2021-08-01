@@ -1,41 +1,77 @@
 package roc
 
 import (
+	"io/ioutil"
+	"os"
+
 	"github.com/hashicorp/go-hclog"
+	"gopkg.in/yaml.v3"
 )
 
 var log = hclog.Default()
 
-type Space struct {
-	Identifier Identifier `yaml:"identifier,omitempty"`
-	Imports    []Space    `yaml:"imports,omitempty"`
-	// use identifier instead of string, should reference
-	// plugin binaries as a res:// or file://
-	Endpoints []string
-	channel   chan (*Request)
+type SpaceDefinition struct {
+	Spaces []Space `json:"spaces" yaml:"spaces"`
 }
 
-func NewSpace(identifier Identifier, endpointPaths ...string) Space {
+type GrammarDefinition struct {
+	Base string `json:"base" yaml:"base"`
+	// parts []grammarElement `json:"parts,omitempty" yaml:"parts,omitempty"`
+}
+
+type EndpointDefinition struct {
+	Name    string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Grammar GrammarDefinition `json:"grammar,omitempty" yaml:"grammar,omitempty"`
+	Cmd     string            `json:"cmd,omitempty" yaml:"cmd,omitempty"`
+}
+
+type Space struct {
+	Identifier Identifier `yaml:"identifier,omitempty" json:"identifier,omitempty"`
+	Imports    []Space    `yaml:"imports,omitempty" json:"imports,omitempty"`
+	// use identifier instead of string, should reference
+	// plugin binaries as a res:// or file://
+	EndpointDefinitions []EndpointDefinition `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
+	channel             chan (*Request)
+}
+
+func NewSpace(identifier Identifier, endpoints ...EndpointDefinition) Space {
 	s := Space{
-		Identifier: identifier,
-		Imports:    []Space{},
-		Endpoints:  endpointPaths,
-		channel:    make(chan *Request),
+		Identifier:          identifier,
+		Imports:             []Space{},
+		EndpointDefinitions: endpoints,
+		channel:             make(chan *Request),
 	}
 
-	log.Debug("created space", "identifier", s.Identifier, "endpoints", s.Endpoints)
+	log.Debug("created space", "identifier", s.Identifier, "endpoints", len(s.EndpointDefinitions))
 	return s
+}
+
+func LoadSpaces(path string) []Space {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Error("failed to read config file", "error", err)
+		os.Exit(1)
+	}
+
+	def := SpaceDefinition{}
+	err = yaml.Unmarshal(data, &def)
+	if err != nil {
+		log.Error("failed to parse space definition", err)
+		os.Exit(1)
+	}
+	return def.Spaces
+
 }
 
 func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
 	log.Info("interrogating endpoints",
 		"space", s.Identifier,
 	)
-	for _, ePath := range s.Endpoints {
-		e := NewPhysicalEndpoint(ePath)
+	for _, ed := range s.EndpointDefinitions {
+		e := NewPhysicalEndpoint(ed.Cmd)
 
 		if e.CanResolve(ctx) {
-			log.Info("resolve affirmed", "endpoint", ePath)
+			log.Info("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
 			c <- e
 		}
 	}

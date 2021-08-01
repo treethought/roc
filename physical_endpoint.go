@@ -7,11 +7,14 @@ import (
 	"github.com/hashicorp/go-plugin"
 )
 
+// PhysicalEndpoint represents an interface to a running  endpoint instance.
+// The endpoint's binary is executed and may be killed via the Client
 type PhysicalEndpoint struct {
 	Endpoint
 	Client *plugin.Client
 }
 
+// NewPhysicalEndpoint starts a physical process and returns an RPC implementation
 func NewPhysicalEndpoint(path string) Endpoint {
 	// We're a host! Start by launching the plugin pss.
 	client := plugin.NewClient(&plugin.ClientConfig{

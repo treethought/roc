@@ -23,6 +23,7 @@ func NewKernel() *Kernel {
 			JSONFormat: false,
 			Name:       "kernel",
 			Color:      hclog.ForceColor,
+            DisableTime: true,
 		}),
 	}
 
@@ -34,7 +35,8 @@ func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 		k.logger.Debug("adding to scope", "space", s.Identifier)
 		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
 	}
-	k.logger.Debug("dispatching request from kernel",
+
+	k.logger.Info("dispatching request from kernel",
 		"num_spaces", len(ctx.Scope.Spaces),
 	)
 

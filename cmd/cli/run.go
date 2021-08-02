@@ -19,13 +19,7 @@ var runCmd = &cobra.Command{
 		fmt.Println("loading space definitions")
 		spaces := roc.LoadSpaces(config)
 		k.Register(spaces...)
-
-		ctx := roc.NewRequestContext("res://hello", roc.Source)
-        resp, err := k.Dispatch(ctx)
-        if err != nil {
-            fmt.Println(err)
-        }
-        fmt.Print(resp)
+		k.Start()
 
 	},
 }

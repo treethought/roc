@@ -1,0 +1,11 @@
+spaces:
+- identifier: space://myspace
+  endpoints:
+  - name: greeter
+    grammar:
+      base: res://hello
+    cmd: ./bin/greeter
+  - name: namer
+    grammar:
+      base: res://name
+    cmd: ./bin/namer

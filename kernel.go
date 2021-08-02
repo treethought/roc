@@ -1,55 +1,63 @@
 package roc
 
-import "log"
+import (
+	"os"
+
+	"github.com/hashicorp/go-hclog"
+)
 
 type Kernel struct {
-	Spaces   []Space
-	receiver chan (RequestContext)
-	issuer   chan (RequestContext)
+	Spaces     map[Identifier]Space
+	receiver   chan (*RequestContext)
+	Dispatcher Dispatcher
+	logger     hclog.Logger
 }
 
-func NewKernel() Kernel {
-	return Kernel{
-		Spaces:   []Space{},
-		receiver: make(chan RequestContext),
-		issuer:   make(chan RequestContext),
-	}
-}
-
-func (k Kernel) startReceiver() {
-	for {
-		incoming := <-k.receiver
-		k.Dispatch(incoming)
-	}
-}
-
-func (k Kernel) buildResolveRequest(ctx RequestContext) Request {
-	return Request{
-		identifier: ctx.Request.Identifier(),
-		verb:       Resolve,
-		// TODO: make interface or someting for rep classes
-		// representationClass: ClassResolution{},
+func NewKernel() *Kernel {
+	k := &Kernel{
+		Spaces:   make(map[Identifier]Space),
+		receiver: make(chan *RequestContext),
+		logger: hclog.New(&hclog.LoggerOptions{
+			Level:      hclog.Info,
+			Output:     os.Stderr,
+			JSONFormat: false,
+			Name:       "kernel",
+			Color:      hclog.ForceColor,
+            DisableTime: true,
+		}),
 	}
 
+	return k
 }
 
-func (k Kernel) resolveEndpoint(ctx RequestContext) EndpointInteface {
-	c := make(chan (EndpointInteface))
+func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 	for _, s := range k.Spaces {
-		go s.MatchEndpoint(ctx, c)
+		k.logger.Debug("adding to scope", "space", s.Identifier)
+		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
 	}
 
-	return <-c
+	k.logger.Info("dispatching request from kernel",
+		"num_spaces", len(ctx.Scope.Spaces),
+	)
+
+	return DispatchRequest(ctx)
 }
 
-func (k Kernel) Dispatch(ctx RequestContext) Representation {
-	log.Printf("dispatching request for identifer: %s", ctx.Request.Identifier())
+func (k *Kernel) Register(spaces ...Space) {
+	for _, space := range spaces {
+		k.logger.Info("registering space",
+			"space", space.Identifier,
+		)
+		k.Spaces[space.Identifier] = space
+	}
 
-	endpoint := k.resolveEndpoint(ctx)
-	log.Printf("resolved to endpoint: %s", endpoint)
+}
 
-	// TODO route verbs to methods
-	rep := endpoint.Source(ctx)
-	return rep
+func (k *Kernel) Receiver() chan (*RequestContext) {
+	return k.receiver
+}
+
+func (k Kernel) buildResolveRequestContext(request *Request) *RequestContext {
+	return NewRequestContext(request.Identifier, Resolve)
 
 }

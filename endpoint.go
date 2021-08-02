@@ -1,59 +1,72 @@
+// Package shared contains shared data between the host and plugins.
 package roc
 
-import "fmt"
+import (
+	"net/rpc"
 
-// Identifier is an opaque token that identifies a single resource
-// a resource may have one or more identifiers
-type Identifier string
+	"github.com/hashicorp/go-plugin"
+)
 
-type RepresentationClass interface {
-	String() string
-	Identifier() Identifier
+func Serve(e Endpoint) {
+	a, ok := e.(Accessor)
+	if ok {
+		a.Logger.Debug("starting accessor",
+			"name", a.Name,
+			"identifier", a.Identifier(),
+		)
+	}
+
+	// pluginMap is the map of plugins we can dispense.
+	var pluginMap = map[string]plugin.Plugin{
+		"endpoint": &EndpointPlugin{Impl: e},
+	}
+
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: Handshake,
+		Plugins:         pluginMap,
+	})
+
 }
 
-type EndpointInteface interface {
-	// TODO return Resolution Response
-	Resolve(ctx RequestContext) bool
-	Source(ctx RequestContext) Representation
-	Sink(ctx RequestContext)
-	New(ctx RequestContext) Identifier
-	Delete(ctx RequestContext) bool
-	Exists(ctx RequestContext) bool
-	Transrept(ctx RequestContext) Representation
-	// Meta(ctx RequestArgument) MetaRepresentation
+// Endpoint represents the gateway between a logical resource and the computation
+type Endpoint interface {
+	Resource
+
+	// Grammer returns the defined set of identifiers that bind an endpoint to a Space
+	// Grammar() Grammar
+
+	// Evaluate processes a request to create or return a Representation of the requested resource
+	Evaluate(ctx *RequestContext) Representation
+
+	// Type() string
+	// Meta(ctx RequestContextArgument) map[string][]string
 }
 
-type Endpoint struct {
-	Grammar Grammar
+// This is the implementation of plugin.Plugin so we can serve/consume this
+//
+// This has two methods: Server must return an RPC server for this plugin
+// type. We construct a EndpointRPCServer for this.
+//
+// Client must return an implementation of our interface that communicates
+// over an RPC client. We return EndpointRPC for this.
+//
+// Ignore MuxBroker. That is used to create more multiplexed streams on our
+// plugin connection and is a more advanced use case.
+
+// This is the implementation of plugin.Plugin so we can serve/consume this.
+// We also implement GRPCPlugin so that this plugin can be served over
+// gRPC.
+type EndpointPlugin struct {
+	plugin.NetRPCUnsupportedPlugin
+	// Concrete implementation, written in Go. This is only used for plugins
+	// that are written in Go.
+	Impl Endpoint
 }
 
-func (e Endpoint) String() string {
-	return fmt.Sprintf("endpoint://%s", e.Grammar.String())
+func (p *EndpointPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
+	return &EndpointRPCServer{Impl: p.Impl}, nil
 }
 
-func (e Endpoint) Resolve(ctx RequestContext) bool {
-	return e.Grammar.Match(ctx.Request.Identifier())
+func (EndpointPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
+	return &EndpointRPC{client: c}, nil
 }
-
-func (e Endpoint) Source(ctx RequestContext) Representation {
-	return nil
-}
-
-func (e Endpoint) Sink(ctx RequestContext) {}
-
-func (e Endpoint) New(ctx RequestContext) Identifier {
-	return ""
-}
-func (e Endpoint) Delete(ctx RequestContext) bool {
-	return false
-}
-func (e Endpoint) Exists(ctx RequestContext) bool {
-	return false
-}
-func (e Endpoint) Transrept(ctx RequestContext) Representation {
-	return nil
-}
-
-// func (e Endpoint) Meta(ctx RequestArgument) MetaRepresentation {
-// 	return nil
-// }

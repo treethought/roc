@@ -3,14 +3,19 @@ help:
 
 SHELL := /bin/bash
 
+build-cli:
+	go build -o ./roc ./cmd/...
 
-plugins:
+clean:
+	rm -rf bin/*
+
+build:
 	go build -o ./bin/greeter ./examples/greeter
 	go build -o ./bin/namer ./examples/namer
-	go build -o ./dispatcher/dispatcher ./dispatcher/main.go
+	go build -o ./bin/std/ ./std/...
 
 
 start:
 	go run cmd/main.go run -c examples/config.yaml
 
-run: plugins start
+run: build start

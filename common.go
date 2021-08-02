@@ -20,4 +20,5 @@ var Handshake = plugin.HandshakeConfig{
 var PluginMap = map[string]plugin.Plugin{
 	"endpoint":   &EndpointPlugin{},
 	"dispatcher": &DispatcherPlugin{},
+	"transport":  &TransportPlugin{},
 }

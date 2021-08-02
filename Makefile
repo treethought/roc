@@ -11,6 +11,6 @@ plugins:
 
 
 start:
-	go run cmd/main.go
+	go run cmd/main.go run -c examples/config.yaml
 
 run: plugins start

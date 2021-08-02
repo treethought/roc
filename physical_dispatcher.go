@@ -19,6 +19,7 @@ func DispatchRequest(ctx *RequestContext) (Representation, error) {
 		HandshakeConfig: Handshake,
 		Plugins:         PluginMap,
 		Cmd:             exec.Command("./dispatcher/dispatcher"),
+		Managed:         true,
 		Logger: hclog.New(&hclog.LoggerOptions{
 			Level:       hclog.Debug,
 			Output:      os.Stderr,

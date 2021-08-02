@@ -5,33 +5,10 @@ import (
 	"net/rpc"
 )
 
-// Here is an implementation that talks over RPC
+// EndpointRPC represents the RPC client implementation of an Endpoint
+// All Endpoint methods are executed by making an RPC call to the plugin server
 type EndpointRPC struct {
 	client *rpc.Client
-}
-
-func (e *EndpointRPC) setDispatcher(ctx *RequestContext) error {
-	// dispatchServer := &DispatcherRPCServer{Impl: ctx.Dispatcher}
-	// ctx.Dispatcher = NewPhysicalDispatcher()
-
-	// serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
-	// 	s = grpc.NewServer(opts...)
-	// 	proto.RegisterAddHelperServer(s, addHelperServer)
-
-	// 	return s
-	// }
-
-	// brokerID := m.broker.NextId()
-	// go m.broker.AcceptAndServe(brokerID, serverFunc)
-
-	// _, err := m.client.Put(context.Background(), &proto.PutRequest{
-	// 	AddServer: brokerID,
-	// 	Key:       key,
-	// 	Value:     value,
-	// })
-
-	// s.Stop()
-	return nil
 }
 
 // CanResolve responds affirmatively if the endpoint can handle the request based on the identifier
@@ -135,8 +112,9 @@ func (e *EndpointRPC) Exists(ctx *RequestContext) bool {
 	return resp
 }
 
-// Here is the RPC server that EndpointRPC talks to, conforming to
-// the requirements of net/rpc
+// EndpointRPCServer is the server side implementation of Endpoint
+// This server receives calls from EndpointRPC and provides the result
+// by calling the implemtnation defined in the custom plugin code
 type EndpointRPCServer struct {
 	// This is the real implementation
 	Impl Endpoint

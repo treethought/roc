@@ -20,11 +20,12 @@ func DispatchRequest(ctx *RequestContext) (Representation, error) {
 		Plugins:         PluginMap,
 		Cmd:             exec.Command("./dispatcher/dispatcher"),
 		Logger: hclog.New(&hclog.LoggerOptions{
-			Level:      hclog.Trace,
-			Output:     os.Stderr,
-			JSONFormat: false,
-			Name:       "dispatcher",
-			Color:      hclog.ForceColor,
+			Level:       hclog.Debug,
+			Output:      os.Stderr,
+			JSONFormat:  false,
+			Name:        "dispatcher",
+			Color:       hclog.ForceColor,
+			DisableTime: true,
 		}),
 	})
 	defer client.Kill()
@@ -37,6 +38,7 @@ func DispatchRequest(ctx *RequestContext) (Representation, error) {
 	}
 
 	// RequestContext the plugin
+	log.Info("dispensing dispatcher")
 	raw, err := rpcClient.Dispense("dispatcher")
 	if err != nil {
 		log.Error("failed to dispense dispatcher", "error", err)

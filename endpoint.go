@@ -12,7 +12,6 @@ func Serve(e Endpoint) {
 	if ok {
 		a.Logger.Debug("starting accessor",
 			"name", a.Name,
-			"grammar", a.Grammar().String(),
 			"identifier", a.Identifier(),
 		)
 	}
@@ -32,9 +31,6 @@ func Serve(e Endpoint) {
 // Endpoint represents the gateway between a logical resource and the computation
 type Endpoint interface {
 	Resource
-
-	// CanResolve responds affirmatively if the endpoint can handle the request based on the identifier
-	CanResolve(ctx *RequestContext) bool
 
 	// Grammer returns the defined set of identifiers that bind an endpoint to a Space
 	// Grammar() Grammar

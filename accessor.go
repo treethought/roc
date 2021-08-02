@@ -12,21 +12,21 @@ const EndpointTypeAccessor string = "accessor"
 // Accessor is a struct implementing the default behavior for an empty EndpointAccessor
 // This type is useful for embedding with custom implementations of EndpointAccessor
 type Accessor struct {
-	grammar Grammar `yaml:"grammar,omitempty"`
-	Name    string
-	Logger  hclog.Logger
+	// grammar Grammar `yaml:"grammar,omitempty"`
+	Name   string
+	Logger hclog.Logger
 }
 
-func NewAccessor(name string, grammar Grammar) *Accessor {
+func NewAccessor(name string) *Accessor {
 	return &Accessor{
-		grammar: grammar,
-		Name:    name,
+		Name: name,
 		Logger: hclog.New(&hclog.LoggerOptions{
 			Level:      hclog.Info,
 			Output:     os.Stderr,
 			JSONFormat: false,
 			Name:       name,
 			Color:      hclog.ForceColor,
+            DisableTime: true,
 		}),
 	}
 }
@@ -45,19 +45,12 @@ func (a *Accessor) SetLogger(l hclog.Logger) {
 	a.Logger = l
 }
 
-func (e Accessor) Grammar() Grammar {
-	return e.grammar
-}
-func (e *Accessor) SetGrammar(grammar Grammar) {
-	e.grammar = grammar
-}
-
 func (e Accessor) Type() string {
 	return EndpointTypeAccessor
 }
 
 func (e Accessor) String() string {
-	return fmt.Sprintf("endpoint://%s", e.Grammar().String())
+	return fmt.Sprintf("endpoint://%s", e.Name)
 }
 
 func (e Accessor) Source(ctx *RequestContext) Representation {
@@ -77,10 +70,6 @@ func (e Accessor) Exists(ctx *RequestContext) bool {
 }
 func (e Accessor) Transrept(ctx *RequestContext) Representation {
 	return nil
-}
-
-func (e Accessor) CanResolve(ctx *RequestContext) bool {
-	return e.Grammar().Match(ctx.Request.Identifier)
 }
 
 func (e Accessor) Evaluate(ctx *RequestContext) Representation {

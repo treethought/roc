@@ -142,10 +142,6 @@ type EndpointRPCServer struct {
 	Impl Endpoint
 }
 
-func (s *EndpointRPCServer) CanResolve(ctx *RequestContext, resp *bool) error {
-	*resp = s.Impl.CanResolve(ctx)
-	return nil
-}
 func (s *EndpointRPCServer) Evaluate(ctx *RequestContext, resp *Representation) error {
 	*resp = s.Impl.Evaluate(ctx)
 	return nil

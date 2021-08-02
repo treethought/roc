@@ -8,7 +8,9 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var log = hclog.Default()
+var log = hclog.New(&hclog.LoggerOptions{
+	DisableTime: true,
+})
 
 type SpaceDefinition struct {
 	Spaces []Space `json:"spaces" yaml:"spaces"`
@@ -32,6 +34,7 @@ type Space struct {
 	// plugin binaries as a res:// or file://
 	EndpointDefinitions []EndpointDefinition `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
 	channel             chan (*Request)
+	logger              hclog.Logger
 }
 
 func NewSpace(identifier Identifier, endpoints ...EndpointDefinition) Space {
@@ -63,16 +66,27 @@ func LoadSpaces(path string) []Space {
 
 }
 
-func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
-	log.Info("interrogating endpoints",
-		"space", s.Identifier,
-	)
-	for _, ed := range s.EndpointDefinitions {
-		e := NewPhysicalEndpoint(ed.Cmd)
+func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
+	grammar := NewGrammar(e.Grammar.Base)
+	log.Debug("checking grammar", "grammar", grammar.String(), "identifier", ctx.Request.Identifier)
+	resolve := grammar.Match(ctx.Request.Identifier)
+	return resolve
 
-		if e.CanResolve(ctx) {
+}
+
+func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
+	for _, ed := range s.EndpointDefinitions {
+		log.Info("interrogating endpoint",
+			"space", s.Identifier,
+			"endpoint", ed.Name,
+		)
+		// TODO match grammar in endpoint or in space?
+		// e := NewPhysicalEndpoint(ed.Cmd)
+		// if e.CanResolve(ctx) {
+		if canResolve(ctx, ed) {
 			log.Info("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
-			c <- e
+			c <- NewPhysicalEndpoint(ed.Cmd)
+			close(c)
 		}
 	}
 }

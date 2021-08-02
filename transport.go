@@ -33,7 +33,7 @@ func NewTransport(name string) *TransportImpl {
 }
 
 func (t *TransportImpl) Init(scope RequestScope) error {
-    log.Debug("initializing transport scope")
+	log.Debug("initializing transport scope")
 	t.Scope = scope
 	return t.OnInit()
 }

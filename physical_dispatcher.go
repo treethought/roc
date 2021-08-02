@@ -18,7 +18,7 @@ func DispatchRequest(ctx *RequestContext) (Representation, error) {
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: Handshake,
 		Plugins:         PluginMap,
-		Cmd:             exec.Command("./dispatcher/dispatcher"),
+		Cmd:             exec.Command("./bin//std/dispatcher"),
 		Managed:         true,
 		Logger: hclog.New(&hclog.LoggerOptions{
 			Level:       hclog.Debug,

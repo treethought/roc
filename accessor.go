@@ -21,12 +21,12 @@ func NewAccessor(name string) *Accessor {
 	return &Accessor{
 		Name: name,
 		Logger: hclog.New(&hclog.LoggerOptions{
-			Level:      hclog.Info,
-			Output:     os.Stderr,
-			JSONFormat: false,
-			Name:       name,
-			Color:      hclog.ForceColor,
-            DisableTime: true,
+			Level:       hclog.Info,
+			Output:      os.Stderr,
+			JSONFormat:  false,
+			Name:        name,
+			Color:       hclog.ForceColor,
+			DisableTime: true,
 		}),
 	}
 }

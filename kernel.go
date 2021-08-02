@@ -1,6 +1,7 @@
 package roc
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -33,7 +34,7 @@ func NewKernel() *Kernel {
 	return k
 }
 
-func (k Kernel) Start() error {
+func (k Kernel) startTransport() (PhysicalTransport, error) {
 	k.logger.Info("creating http transport")
 	httpt := NewPhysicalTransport("./bin/std/transport")
 
@@ -55,11 +56,20 @@ func (k Kernel) Start() error {
 	if err != nil {
 		log.Error("failed to initialize transport scope", "transport", httpt)
 	}
+	return phys, nil
+}
+
+func (k *Kernel) Start() error {
+	transport, err := k.startTransport()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
-	defer phys.Client.Kill()
+	defer transport.Client.Kill()
 	defer plugin.CleanupClients()
 	<-sig
 

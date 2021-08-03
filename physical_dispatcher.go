@@ -20,14 +20,16 @@ func DispatchRequest(ctx *RequestContext) (Representation, error) {
 		Plugins:         PluginMap,
 		Cmd:             exec.Command("./bin//std/dispatcher"),
 		Managed:         true,
-		Logger: hclog.New(&hclog.LoggerOptions{
-			Level:       hclog.Debug,
-			Output:      os.Stderr,
-			JSONFormat:  false,
-			Name:        "dispatcher",
-			Color:       hclog.ForceColor,
-			DisableTime: true,
-		}),
+		AllowedProtocols: []plugin.Protocol{
+			plugin.ProtocolGRPC},
+		// Logger: hclog.New(&hclog.LoggerOptions{
+		// 	Level:       hclog.Debug,
+		// 	Output:      os.Stderr,
+		// 	JSONFormat:  false,
+		// 	Name:        "dispatcher",
+		// 	Color:       hclog.ForceColor,
+		// 	DisableTime: true,
+		// }),
 	})
 	defer client.Kill()
 

@@ -1,0 +1,94 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "github.com/treethought/roc/proto";
+
+enum Verb {
+	UNDEFINED = 0;
+	SOURCE = 1;
+	SINK = 2;
+	NEW = 3;
+	DELELE = 4;
+	EXISTS = 5;
+}
+
+message Representation {
+	string value = 1;
+}
+
+message GrammarDefinition {
+	string base = 1;
+}
+
+message EndpointDefinition {
+	string name   = 1; 
+	GrammarDefinition grammar = 2;
+	string cmd = 3;
+}
+
+message Space {
+	string identifier = 1;
+	repeated Space imports = 2;
+	repeated EndpointDefinition endpoint_definitions = 3;
+}
+
+message MapField {
+	string key = 1;
+	repeated string value = 2;
+
+}
+
+message Request {
+  string identifier = 1;
+  Verb verb = 2;
+  string representation_class = 3;
+  MapField arguments = 4;
+  MapField headers = 5;
+  /* Map<string, repeated string> arguments = 4; */
+  /* Map<string, repeated string> headers = 5; */
+}
+
+message IdentifierResponse {
+	string value = 1;
+
+}
+
+message BoolResponse {
+	bool value = 1;
+}
+
+message Empty {}
+
+message RequestScope {
+	repeated Space spaces = 1;
+}
+message RequestContext {
+	Request request = 1;
+	string dispatcher_address = 2;
+	RequestScope scope = 3;
+}
+
+service Dispatcher {
+	rpc Dispatch(RequestContext) returns (Representation);
+}
+
+
+service Endpoint {
+	rpc Evaluate(RequestContext) returns (Representation);
+	rpc Source(RequestContext) returns (Representation);
+	rpc Sink(RequestContext) returns (Empty);
+	rpc New(RequestContext) returns (IdentifierResponse);
+	rpc Delete(RequestContext) returns (BoolResponse);
+	rpc Exists(RequestContext) returns (BoolResponse);
+
+}
+
+service Transport {
+	rpc Init(RequestScope) returns (Empty);
+	rpc Evaluate(RequestContext) returns (Representation);
+	rpc Source(RequestContext) returns (Representation);
+	rpc Sink(RequestContext) returns (Empty);
+	rpc New(RequestContext) returns (IdentifierResponse);
+	rpc Delete(RequestContext) returns (BoolResponse);
+	rpc Exists(RequestContext) returns (BoolResponse);
+}

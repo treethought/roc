@@ -4,6 +4,9 @@ import (
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
+	"github.com/treethought/roc/proto"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 const EndpointTypeTransport string = "transport"
@@ -52,6 +55,23 @@ func (p *TransportPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
 func (TransportPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
 	return &TransportRPC{client: c}, nil
 }
+
+func (e *TransportPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+    proto.RegisterTransportServer(s, &TransportGRPCServer{
+        Impl: e.Impl,
+        broker: broker,
+    })
+	return nil
+}
+
+func (p *TransportPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &TransportGRPC{
+		client: proto.NewTransportClient(c),
+		broker: broker,
+	}, nil
+}
+
+var _ plugin.GRPCPlugin = &DispatcherPlugin{}
 
 // ServeTransport starts the plugin's RPC server
 // Because Transports typically will not implement the Resource methods,

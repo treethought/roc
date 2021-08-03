@@ -12,6 +12,7 @@ import (
 type PhysicalEndpoint struct {
 	Endpoint
 	Client *plugin.Client
+	path   string
 }
 
 // NewPhysicalEndpoint starts a physical process and returns an RPC implementation
@@ -24,6 +25,8 @@ func NewPhysicalEndpoint(path string) Endpoint {
 		Cmd:             exec.Command(path),
 		Managed:         true,
 		// Logger:          logger,
+		AllowedProtocols: []plugin.Protocol{
+			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
 	})
 
 	// Connect via RPC

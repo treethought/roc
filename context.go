@@ -17,6 +17,7 @@ func NewRequestContext(identifier Identifier, verb Verb) *RequestContext {
 	req := NewRequest(identifier, verb, nil)
 	return &RequestContext{
 		Request: req,
+        Scope: RequestScope{},
 	}
 }
 

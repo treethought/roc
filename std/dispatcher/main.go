@@ -71,6 +71,7 @@ func main() {
 		Plugins: map[string]plugin.Plugin{
 			"dispatcher": &roc.DispatcherPlugin{Impl: &d},
 		},
+        GRPCServer: plugin.DefaultGRPCServer,
 	})
 
 }

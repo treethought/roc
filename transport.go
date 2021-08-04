@@ -23,15 +23,39 @@ type Transport interface {
 // and automatically handles scope initialization
 type TransportImpl struct {
 	*Accessor
-	Scope  RequestScope
-	OnInit func() error
+	Scope          RequestScope
+	OnInit         func() error
+	Dispatcher     Dispatcher
+	broker         *plugin.GRPCBroker
+	dispatchServer uint32
+}
+
+func (t TransportImpl) startDispatcher() {
+	log.Info("starting transport's dispatcher")
+	dispatcher := &CoreDispatcher{}
+	dispatchServer := &DispatcherGRPCServer{Impl: dispatcher}
+
+	var s *grpc.Server
+
+	serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
+		s = grpc.NewServer(opts...)
+		proto.RegisterDispatcherServer(s, dispatchServer)
+		return s
+	}
+
+	brokerID := t.broker.NextId()
+	go t.broker.AcceptAndServe(brokerID, serverFunc)
+	t.dispatchServer = brokerID
 }
 
 func NewTransport(name string) *TransportImpl {
+	// this is done inside the transport plugin
 	return &TransportImpl{
-		Accessor: NewAccessor(name),
-		Scope:    RequestScope{},
-		OnInit:   func() error { return nil },
+		Accessor:   NewAccessor(name),
+		Scope:      RequestScope{},
+		OnInit:     func() error { return nil },
+		broker:     &plugin.GRPCBroker{},
+		Dispatcher: &CoreDispatcher{},
 	}
 }
 
@@ -39,6 +63,25 @@ func (t *TransportImpl) Init(scope RequestScope) error {
 	log.Debug("initializing transport scope")
 	t.Scope = scope
 	return t.OnInit()
+}
+
+func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
+	if t.Dispatcher == nil {
+		t.Dispatcher = &CoreDispatcher{}
+	}
+	for _, s := range t.Scope.Spaces {
+		log.Debug("adding to scope", "space", s.Identifier)
+		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
+	}
+
+	// ctx.Scope = t.Scope
+
+	log.Info("dispatching request from transport",
+		"num_spaces", len(ctx.Scope.Spaces),
+	)
+
+	ctx.Dispatcher = t.Dispatcher
+	return t.Dispatcher.Dispatch(ctx)
 }
 
 type TransportPlugin struct {
@@ -57,10 +100,10 @@ func (TransportPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, 
 }
 
 func (e *TransportPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-    proto.RegisterTransportServer(s, &TransportGRPCServer{
-        Impl: e.Impl,
-        broker: broker,
-    })
+	proto.RegisterTransportServer(s, &TransportGRPCServer{
+		Impl:   e.Impl,
+		broker: broker,
+	})
 	return nil
 }
 
@@ -71,25 +114,25 @@ func (p *TransportPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBro
 	}, nil
 }
 
-var _ plugin.GRPCPlugin = &DispatcherPlugin{}
-
 // ServeTransport starts the plugin's RPC server
 // Because Transports typically will not implement the Resource methods,
 // this can simply be called in a transport so that initial request scope can be initialized
 func ServeTransport(e Transport) {
-	// log.Debug("starting transport",
-	// 	"name", e.Name,
-	// 	"identifier", e.Identifier(),
-	// )
-
+	log.Info("serving transport")
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{
 		"transport": &TransportPlugin{Impl: e},
 	}
 
+	t, ok := e.(*TransportImpl)
+	if ok {
+		t.startDispatcher()
+	}
+
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: Handshake,
 		Plugins:         pluginMap,
+		GRPCServer:      plugin.DefaultGRPCServer,
 	})
 
 }

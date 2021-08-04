@@ -6,6 +6,7 @@ import (
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/treethought/roc/proto"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 // EndpointGRPC is an implementation of KV that talks over RPC.
@@ -84,8 +85,30 @@ func protoToContext(p *proto.RequestContext) *RequestContext {
 
 }
 
+// TODO serve dispatcher server from kernel
+func (m *EndpointGRPC) setDispatchServer(ctx *proto.RequestContext, dispatcher Dispatcher) (stop func()) {
+	dispatchServer := &DispatcherGRPCServer{Impl: dispatcher}
+
+	var s *grpc.Server
+
+	serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
+		s = grpc.NewServer(opts...)
+		proto.RegisterDispatcherServer(s, dispatchServer)
+		return s
+	}
+
+	log.Debug("starting ephemeral dispatch server for endpoiny grpc call")
+	brokerID := m.broker.NextId()
+	go m.broker.AcceptAndServe(brokerID, serverFunc)
+
+	ctx.DispatcherServer = brokerID
+	return s.Stop
+}
+
 func (m *EndpointGRPC) Evaluate(ctx *RequestContext) Representation {
 	protoCtx := newProtoContext(ctx)
+
+	m.setDispatchServer(protoCtx, ctx.Dispatcher)
 	resp, err := m.client.Evaluate(context.Background(), protoCtx)
 	if err != nil {
 		panic(err)
@@ -95,21 +118,27 @@ func (m *EndpointGRPC) Evaluate(ctx *RequestContext) Representation {
 }
 
 func (m *EndpointGRPC) Source(ctx *RequestContext) Representation {
-	// dispatchServer := &GRPCAddHelperServer{Impl: a}
-
+	log.Debug("making endpoint Source grpc call", "identifier", ctx.Request.Identifier)
 	protoCtx := newProtoContext(ctx)
+    //TODO stop server
+    _ = m.setDispatchServer(protoCtx, ctx.Dispatcher)
+	// defer stop()
+
 	resp, err := m.client.Source(context.Background(), protoCtx)
 	if err != nil {
+		log.Error("error making grpc call", "error", err)
 		panic(err)
 	}
 
+	log.Debug("received rpc call response", "resp", resp)
 	return resp.Value
 }
 
 func (m *EndpointGRPC) Sink(ctx *RequestContext) {
-	// dispatchServer := &GRPCAddHelperServer{Impl: a}
-
 	protoCtx := newProtoContext(ctx)
+	stop := m.setDispatchServer(protoCtx, ctx.Dispatcher)
+	defer stop()
+
 	_, err := m.client.Sink(context.Background(), protoCtx)
 	if err != nil {
 		panic(err)
@@ -119,9 +148,10 @@ func (m *EndpointGRPC) Sink(ctx *RequestContext) {
 }
 
 func (m *EndpointGRPC) New(ctx *RequestContext) Identifier {
-	// dispatchServer := &GRPCAddHelperServer{Impl: a}
-
 	protoCtx := newProtoContext(ctx)
+	stop := m.setDispatchServer(protoCtx, ctx.Dispatcher)
+	defer stop()
+
 	resp, err := m.client.New(context.Background(), protoCtx)
 	if err != nil {
 		panic(err)
@@ -131,9 +161,10 @@ func (m *EndpointGRPC) New(ctx *RequestContext) Identifier {
 }
 
 func (m *EndpointGRPC) Delete(ctx *RequestContext) bool {
-	// dispatchServer := &GRPCAddHelperServer{Impl: a}
-
 	protoCtx := newProtoContext(ctx)
+	stop := m.setDispatchServer(protoCtx, ctx.Dispatcher)
+	defer stop()
+
 	resp, err := m.client.Delete(context.Background(), protoCtx)
 	if err != nil {
 		panic(err)
@@ -143,9 +174,10 @@ func (m *EndpointGRPC) Delete(ctx *RequestContext) bool {
 }
 
 func (m *EndpointGRPC) Exists(ctx *RequestContext) bool {
-	// dispatchServer := &GRPCAddHelperServer{Impl: a}
-
 	protoCtx := newProtoContext(ctx)
+	stop := m.setDispatchServer(protoCtx, ctx.Dispatcher)
+	defer stop()
+
 	resp, err := m.client.Exists(context.Background(), protoCtx)
 	if err != nil {
 		panic(err)
@@ -163,40 +195,69 @@ type EndpointGRPCServer struct {
 	broker *plugin.GRPCBroker
 }
 
-func (m *EndpointGRPCServer) Evaluate(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-	rocCtx := protoToContext(req)
-	// rocContext := NewRequestContext(req.Request.Identifier, req.Request.Verb)
+func (m *EndpointGRPCServer) setDispatchClient(ctx *RequestContext, brokerID uint32) (conn *grpc.ClientConn, err error) {
+	log.Debug("setting dispatch client to handle grpc server request", "brokerID", brokerID)
+	conn, err = m.broker.Dial(brokerID)
+	if err != nil {
+		log.Error("failed to create dispatcher client conn", "error", err)
+		return nil, err
+	}
 
+	d := &DispatcherGRPC{
+		// TODO: dont use same broker?
+		// broker: &plugin.GRPCBroker{},
+		client: proto.NewDispatcherClient(conn),
+	}
+	ctx.Dispatcher = d
+	log.Debug("set context dispatcher", "dispatcher", ctx.Dispatcher)
+	return conn, nil
+
+}
+
+func (m *EndpointGRPCServer) Evaluate(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
+
+	rocCtx := protoToContext(req)
 	rep := m.Impl.Evaluate(rocCtx)
 
 	return &proto.Representation{Value: fmt.Sprint(rep)}, nil
 }
 
 func (m *EndpointGRPCServer) Source(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-	// conn, err := m.broker.Dial(req.AddServer)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// defer conn.Close()
-
-	// a := &GRPCAddHelperClient{proto.NewAddHelperClient(conn)}
+	log.Debug("begining endpoint grpc source server implementation")
 
 	rocCtx := protoToContext(req)
-	// rocContext := NewRequestContext(req.Request.Identifier, req.Request.Verb)
+	conn, err := m.setDispatchClient(rocCtx, req.DispatcherServer)
+	if err != nil {
+		log.Error("error setting diaptch client", "err", err)
+		return nil, err
+	}
+	defer conn.Close()
 
 	rep := m.Impl.Source(rocCtx)
 
+	log.Debug("returning source implementation as grpc response", "rep", rep)
 	return &proto.Representation{Value: fmt.Sprint(rep)}, nil
 }
 
 func (m *EndpointGRPCServer) Sink(ctx context.Context, req *proto.RequestContext) (*proto.Empty, error) {
 	rocCtx := protoToContext(req)
+	conn, err := m.setDispatchClient(rocCtx, req.DispatcherServer)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
 	m.Impl.Sink(rocCtx)
 	return &proto.Empty{}, nil
 }
 
 func (m *EndpointGRPCServer) New(ctx context.Context, req *proto.RequestContext) (*proto.IdentifierResponse, error) {
 	rocCtx := protoToContext(req)
+	conn, err := m.setDispatchClient(rocCtx, req.DispatcherServer)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
 
 	ident := m.Impl.New(rocCtx)
 	resp := &proto.IdentifierResponse{
@@ -207,6 +268,11 @@ func (m *EndpointGRPCServer) New(ctx context.Context, req *proto.RequestContext)
 
 func (m *EndpointGRPCServer) Delete(ctx context.Context, req *proto.RequestContext) (*proto.BoolResponse, error) {
 	rocCtx := protoToContext(req)
+	conn, err := m.setDispatchClient(rocCtx, req.DispatcherServer)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
 
 	result := m.Impl.Delete(rocCtx)
 	resp := &proto.BoolResponse{
@@ -217,6 +283,11 @@ func (m *EndpointGRPCServer) Delete(ctx context.Context, req *proto.RequestConte
 
 func (m *EndpointGRPCServer) Exists(ctx context.Context, req *proto.RequestContext) (*proto.BoolResponse, error) {
 	rocCtx := protoToContext(req)
+	conn, err := m.setDispatchClient(rocCtx, req.DispatcherServer)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
 
 	result := m.Impl.Exists(rocCtx)
 	resp := &proto.BoolResponse{

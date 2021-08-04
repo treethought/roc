@@ -64,7 +64,7 @@ message RequestScope {
 }
 message RequestContext {
 	Request request = 1;
-	string dispatcher_address = 2;
+	uint32 dispatcher_server = 2;
 	RequestScope scope = 3;
 }
 

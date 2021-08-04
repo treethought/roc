@@ -13,7 +13,7 @@ type TransportGRPC struct {
 	client proto.TransportClient
 }
 
-func (m *TransportGRPC) Init(scope *RequestScope) error {
+func (m *TransportGRPC) Init(scope RequestScope) error {
 
 	protoScope := &proto.RequestScope{}
 	for _, s := range scope.Spaces {

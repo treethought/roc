@@ -75,6 +75,8 @@ func NewPhysicalTransport(path string) Transport {
 		Plugins:         PluginMap,
 		Cmd:             exec.Command(path),
 		Managed:         true,
+		AllowedProtocols: []plugin.Protocol{
+			plugin.ProtocolGRPC},
 		// Logger:          logger,
 	})
 

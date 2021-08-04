@@ -4,7 +4,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
 
@@ -51,5 +50,6 @@ func DispatchRequest(ctx *RequestContext) (Representation, error) {
 	// We should have a Greeter now! This feels like a normal interface
 	// implementation but is in fact over an RPC connection.
 	dispatcher := raw.(Dispatcher)
+    ctx.Dispatcher = dispatcher
 	return dispatcher.Dispatch(ctx)
 }

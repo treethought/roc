@@ -19,6 +19,5 @@ var Handshake = plugin.HandshakeConfig{
 // PluginMap is the map of plugins we can dispense.
 var PluginMap = map[string]plugin.Plugin{
 	"endpoint":   &EndpointPlugin{},
-	"dispatcher": &DispatcherPlugin{},
 	"transport":  &TransportPlugin{},
 }

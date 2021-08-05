@@ -7,10 +7,7 @@ type RequestScope struct {
 }
 
 type RequestContext struct {
-	Request *Request
-
-	// TODO set as contetx value instead
-	// Dispatcher Dispatcher
+	Request    *Request
 	Dispatcher Dispatcher
 	Scope      RequestScope
 }
@@ -29,22 +26,22 @@ func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
 }
 
 func (c *RequestContext) IssueRequest(req *Request) (Representation, error) {
-    log.Info("issuing new request")
+	log.Info("issuing new request")
 
 	newReqCtx := NewRequestContext(req.Identifier, c.Request.Verb)
 	newReqCtx.Scope = c.Scope
-    newReqCtx.Dispatcher = c.Dispatcher
+	newReqCtx.Dispatcher = c.Dispatcher
 
 	if c.Dispatcher == nil {
-		return nil, fmt.Errorf("dispatcher is nil")
+		return nil, fmt.Errorf("context dispatcher is nil")
 	}
 
-    resp, err := c.Dispatcher.Dispatch(newReqCtx)
-    if err != nil {
-        log.Error("failed to disptach with request context dispatcher", "err", err)
-        return DispatchRequest(newReqCtx)
-    }
-    return resp, nil
+	resp, err := c.Dispatcher.Dispatch(newReqCtx)
+	if err != nil {
+		log.Error("failed to disptach with request context dispatcher", "err", err)
+		return nil, err
+	}
+	return resp, nil
 }
 
 // // Source is a helper method to create and issue a new SOURCE request for the identifier

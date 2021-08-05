@@ -11,12 +11,18 @@ import (
 
 const EndpointTypeTransport string = "transport"
 
+type InitTransport struct {
+	Scope      RequestScope
+	Dispatcher Dispatcher
+}
+
 // EndpointTransport is an endpoint that issues external events into the roc system
 type Transport interface {
 	Endpoint
 	// Init is used to seed the transport with it's spatial scope
-	Init(scope RequestScope) error
+	Init(ctx *InitTransport) error
 }
+
 
 // Transport is a struct implementing the default behavior for an empty EndpointTransport
 // This type is useful for embedding custom implementations of EndpointTransport
@@ -59,9 +65,10 @@ func NewTransport(name string) *TransportImpl {
 	}
 }
 
-func (t *TransportImpl) Init(scope RequestScope) error {
+func (t *TransportImpl) Init(msg *InitTransport) error {
 	log.Debug("initializing transport scope")
-	t.Scope = scope
+	t.Scope = msg.Scope
+	t.Dispatcher = msg.Dispatcher
 	return t.OnInit()
 }
 
@@ -113,6 +120,7 @@ func (p *TransportPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBro
 		broker: broker,
 	}, nil
 }
+
 
 // ServeTransport starts the plugin's RPC server
 // Because Transports typically will not implement the Resource methods,

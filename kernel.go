@@ -123,7 +123,9 @@ func (k Kernel) startTransport() (PhysicalTransport, error) {
 		scope.Spaces = append(scope.Spaces, s)
 	}
 
-	err := phys.Init(scope)
+	initMsg := &InitTransport{Scope: scope, Dispatcher: k.Dispatcher}
+
+	err := phys.Init(initMsg)
 	if err != nil {
 		log.Error("failed to initialize transport scope", "transport", httpt)
 		return phys, err

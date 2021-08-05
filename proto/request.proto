@@ -68,6 +68,11 @@ message RequestContext {
 	RequestScope scope = 3;
 }
 
+message InitTransport {
+	RequestScope scope = 1;
+	uint32 dispatcher_server = 2;
+}
+
 service Dispatcher {
 	rpc Dispatch(RequestContext) returns (Representation);
 }
@@ -84,7 +89,7 @@ service Endpoint {
 }
 
 service Transport {
-	rpc Init(RequestScope) returns (Empty);
+	rpc Init(InitTransport) returns (Empty);
 	rpc Evaluate(RequestContext) returns (Representation);
 	rpc Source(RequestContext) returns (Representation);
 	rpc Sink(RequestContext) returns (Empty);

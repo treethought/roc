@@ -21,10 +21,9 @@ func New() *MyEndpoint {
 
 // Source retrieves representation of resource
 func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
-    e.Logger.Info("Executing source in greeter", "identifier", ctx.Request.Identifier)
+	e.Logger.Info("Executing source in greeter", "identifier", ctx.Request.Identifier)
 
-    e.Logger.Warn("Making subrequest", "target", "res://name")
-
+	e.Logger.Warn("Making subrequest", "target", "res://name")
 
 	name, err := ctx.Source("res://name", nil)
 	if err != nil {

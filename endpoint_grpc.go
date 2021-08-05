@@ -120,8 +120,8 @@ func (m *EndpointGRPC) Evaluate(ctx *RequestContext) Representation {
 func (m *EndpointGRPC) Source(ctx *RequestContext) Representation {
 	log.Debug("making endpoint Source grpc call", "identifier", ctx.Request.Identifier)
 	protoCtx := newProtoContext(ctx)
-    //TODO stop server
-    _ = m.setDispatchServer(protoCtx, ctx.Dispatcher)
+	//TODO stop server
+	_ = m.setDispatchServer(protoCtx, ctx.Dispatcher)
 	// defer stop()
 
 	resp, err := m.client.Source(context.Background(), protoCtx)

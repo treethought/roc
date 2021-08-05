@@ -17,21 +17,21 @@ type Kernel struct {
 	receiver   chan (*RequestContext)
 	Dispatcher Dispatcher
 	logger     hclog.Logger
-    plugins map[string]PhysicalEndpoint
+	plugins    map[string]PhysicalEndpoint
 
-    // TODO maybe remove this. ephermeral server created
-    // for endpoint grpc client works
-    // this is just trying to get transport working
-    broker *plugin.GRPCBroker
-    dispatchServer uint32
+	// TODO maybe remove this. ephermeral server created
+	// for endpoint grpc client works
+	// this is just trying to get transport working
+	broker         *plugin.GRPCBroker
+	dispatchServer uint32
 }
 
 func NewKernel() *Kernel {
 	k := &Kernel{
-		Spaces:   make(map[Identifier]Space),
-		receiver: make(chan *RequestContext),
-        broker: &plugin.GRPCBroker{},
-        Dispatcher: &CoreDispatcher{},
+		Spaces:     make(map[Identifier]Space),
+		receiver:   make(chan *RequestContext),
+		broker:     &plugin.GRPCBroker{},
+		Dispatcher: &CoreDispatcher{},
 		logger: hclog.New(&hclog.LoggerOptions{
 			Level:       hclog.Info,
 			Output:      os.Stderr,
@@ -99,15 +99,15 @@ func (k *Kernel) startDisptcher() {
 	}
 
 	brokerID := k.broker.NextId()
-    log.Info("starting kernel core dispatcher", "broker", brokerID)
+	log.Info("starting kernel core dispatcher", "broker", brokerID)
 	go k.broker.AcceptAndServe(brokerID, serverFunc)
-    k.dispatchServer = brokerID
+	k.dispatchServer = brokerID
 
 }
 
 func (k Kernel) startTransport() (PhysicalTransport, error) {
 	k.logger.Info("creating http transport")
-    httpt := NewPhysicalTransport("./bin/std/transport")
+	httpt := NewPhysicalTransport("./bin/std/transport")
 
 	log.Debug("initializing transport scope")
 
@@ -126,14 +126,14 @@ func (k Kernel) startTransport() (PhysicalTransport, error) {
 	err := phys.Init(scope)
 	if err != nil {
 		log.Error("failed to initialize transport scope", "transport", httpt)
-        return phys, err
+		return phys, err
 	}
-    log.Info("initialized transport")
+	log.Info("initialized transport")
 	return phys, nil
 }
 
 func (k *Kernel) Start() error {
-    // k.startDisptcher()
+	// k.startDisptcher()
 	transport, err := k.startTransport()
 	if err != nil {
 		fmt.Println(err)
@@ -151,9 +151,9 @@ func (k *Kernel) Start() error {
 }
 
 func (k *Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
-    if k.Dispatcher == nil {
-        k.Dispatcher = &CoreDispatcher{}
-    }
+	if k.Dispatcher == nil {
+		k.Dispatcher = &CoreDispatcher{}
+	}
 	for _, s := range k.Spaces {
 		k.logger.Debug("adding to scope", "space", s.Identifier)
 		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
@@ -163,8 +163,8 @@ func (k *Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 		"num_spaces", len(ctx.Scope.Spaces),
 	)
 
-    ctx.Dispatcher = k.Dispatcher
-    return k.Dispatcher.Dispatch(ctx)
+	ctx.Dispatcher = k.Dispatcher
+	return k.Dispatcher.Dispatch(ctx)
 
 	// return DispatchRequest(ctx)
 }

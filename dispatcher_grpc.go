@@ -12,12 +12,12 @@ type DispatcherGRPC struct {
 }
 
 func (m *DispatcherGRPC) Dispatch(ctx *RequestContext) (Representation, error) {
-    log.Debug("making dispatch grpc call")
+	log.Debug("making dispatch grpc call")
 	protoCtx := newProtoContext(ctx)
 	resp, err := m.client.Dispatch(context.Background(), protoCtx)
-    if resp == nil {
-        return nil, fmt.Errorf("response from dispatch was nil")
-    }
+	if resp == nil {
+		return nil, fmt.Errorf("response from dispatch was nil")
+	}
 
 	return resp.Value, err
 }
@@ -26,18 +26,15 @@ type DispatcherGRPCServer struct {
 	proto.UnimplementedDispatcherServer
 	// This is the real implementation
 	Impl Dispatcher
-
 }
 
 func (m *DispatcherGRPCServer) Dispatch(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-    log.Debug("peforming dispatch in grpc server")
+	log.Debug("peforming dispatch in grpc server")
 	rocCtx := protoToContext(req)
 	rep, err := m.Impl.Dispatch(rocCtx)
-    if err != nil {
-        log.Error("error calling dispatch implementation", "err", err)
-        return nil, err
-    }
+	if err != nil {
+		log.Error("error calling dispatch implementation", "err", err)
+		return nil, err
+	}
 	return &proto.Representation{Value: fmt.Sprint(rep)}, err
 }
-
-

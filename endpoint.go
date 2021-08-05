@@ -27,7 +27,7 @@ func Serve(e Endpoint) {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: Handshake,
 		Plugins:         pluginMap,
-        GRPCServer: plugin.DefaultGRPCServer,
+		GRPCServer:      plugin.DefaultGRPCServer,
 	})
 
 }
@@ -76,10 +76,10 @@ func (EndpointPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, e
 }
 
 func (e *EndpointPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-    proto.RegisterEndpointServer(s, &EndpointGRPCServer{
-        Impl: e.Impl,
-        broker: broker,
-    })
+	proto.RegisterEndpointServer(s, &EndpointGRPCServer{
+		Impl:   e.Impl,
+		broker: broker,
+	})
 	return nil
 }
 

@@ -31,7 +31,7 @@ func (m *TransportGRPC) Init(scope RequestScope) error {
 // // Here is the gRPC server that EndpointGRPC talks to.
 type TransportGRPCServer struct {
 	EndpointGRPCServer
-    proto.UnimplementedTransportServer
+	proto.UnimplementedTransportServer
 
 	// This is the real implementation
 	Impl Transport
@@ -51,25 +51,25 @@ func (m *TransportGRPCServer) Init(ctx context.Context, req *proto.RequestScope)
 }
 
 func (m *TransportGRPCServer) Evaluate(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-    return m.EndpointGRPCServer.Evaluate(ctx, req)
+	return m.EndpointGRPCServer.Evaluate(ctx, req)
 }
 
 func (m *TransportGRPCServer) Source(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-    return m.EndpointGRPCServer.Source(ctx, req)
+	return m.EndpointGRPCServer.Source(ctx, req)
 }
 
 func (m *TransportGRPCServer) Sink(ctx context.Context, req *proto.RequestContext) (*proto.Empty, error) {
-    return m.EndpointGRPCServer.Sink(ctx, req)
+	return m.EndpointGRPCServer.Sink(ctx, req)
 }
 
 func (m *TransportGRPCServer) New(ctx context.Context, req *proto.RequestContext) (*proto.IdentifierResponse, error) {
-    return m.EndpointGRPCServer.New(ctx, req)
+	return m.EndpointGRPCServer.New(ctx, req)
 }
 
 func (m *TransportGRPCServer) Delete(ctx context.Context, req *proto.RequestContext) (*proto.BoolResponse, error) {
-    return m.EndpointGRPCServer.Delete(ctx, req)
+	return m.EndpointGRPCServer.Delete(ctx, req)
 }
 
 func (m *TransportGRPCServer) Exists(ctx context.Context, req *proto.RequestContext) (*proto.BoolResponse, error) {
-    return m.EndpointGRPCServer.Exists(ctx, req)
+	return m.EndpointGRPCServer.Exists(ctx, req)
 }

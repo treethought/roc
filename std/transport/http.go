@@ -20,21 +20,19 @@ func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
 	identifier := roc.Identifier(fmt.Sprintf("res:/%s", req.URL.Path))
 	log.Info("mapped http request to identifier", "identifier", identifier)
 
-
-    // TODO refactor to use roc.Source()?
+	// TODO refactor to use roc.Source()?
 
 	ctx := roc.NewRequestContext(identifier, roc.Source)
 	// ctx.Scope = t.Scope
-    // ctx.Dispatcher =
 
-    resp, err := t.Dispatch(ctx)
+	resp, err := t.Dispatch(ctx)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	r := fmt.Sprintf("%+v", resp)
-    log.Info("returning response to http client", "response", r)
+	log.Info("returning response to http client", "response", r)
 	w.Write([]byte(r))
 
 }

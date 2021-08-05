@@ -23,7 +23,6 @@ type Transport interface {
 	Init(ctx *InitTransport) error
 }
 
-
 // Transport is a struct implementing the default behavior for an empty EndpointTransport
 // This type is useful for embedding custom implementations of EndpointTransport
 // and automatically handles scope initialization
@@ -69,11 +68,13 @@ func (t *TransportImpl) Init(msg *InitTransport) error {
 	log.Debug("initializing transport scope")
 	t.Scope = msg.Scope
 	t.Dispatcher = msg.Dispatcher
+	log.Info("transporter has been initialized", "scope", t.Scope, "dispatcher", t.Dispatcher)
 	return t.OnInit()
 }
 
 func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 	if t.Dispatcher == nil {
+		log.Error("transport dispatcher is nil, setting")
 		t.Dispatcher = &CoreDispatcher{}
 	}
 	for _, s := range t.Scope.Spaces {
@@ -87,6 +88,7 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 		"num_spaces", len(ctx.Scope.Spaces),
 	)
 
+	log.Info("setting context dispatcher", "dispatcher", t.Dispatcher)
 	ctx.Dispatcher = t.Dispatcher
 	return t.Dispatcher.Dispatch(ctx)
 }
@@ -120,7 +122,6 @@ func (p *TransportPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBro
 		broker: broker,
 	}, nil
 }
-
 
 // ServeTransport starts the plugin's RPC server
 // Because Transports typically will not implement the Resource methods,

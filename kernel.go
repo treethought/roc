@@ -138,7 +138,7 @@ func (k *Kernel) Start() error {
 	// k.startDisptcher()
 	transport, err := k.startTransport()
 	if err != nil {
-		fmt.Println(err)
+		log.Error("error starting transport:", "err", err)
 		os.Exit(1)
 	}
 

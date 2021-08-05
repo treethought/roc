@@ -228,7 +228,7 @@ func (m *EndpointGRPCServer) Source(ctx context.Context, req *proto.RequestConte
 	rocCtx := protoToContext(req)
 	conn, err := m.setDispatchClient(rocCtx, req.DispatcherServer)
 	if err != nil {
-		log.Error("error setting diaptch client", "err", err)
+		log.Error("error setting dispatch client", "err", err)
 		return nil, err
 	}
 	defer conn.Close()

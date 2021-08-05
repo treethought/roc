@@ -13,9 +13,12 @@ type DispatcherGRPC struct {
 
 func (m *DispatcherGRPC) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Debug("making dispatch grpc call")
+
 	protoCtx := newProtoContext(ctx)
+
 	resp, err := m.client.Dispatch(context.Background(), protoCtx)
 	if resp == nil {
+        log.Error("failed to make dispatch grpc call", "err", err)
 		return nil, fmt.Errorf("response from dispatch was nil")
 	}
 

@@ -27,6 +27,7 @@ func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
 
 	resp, err := t.Dispatch(ctx)
 	if err != nil {
+		log.Error("failed to dispatch request", "err", err)
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 	}

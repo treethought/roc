@@ -1,15 +1,12 @@
 package roc
 
-import "fmt"
-
 type RequestScope struct {
 	Spaces []Space
 }
 
 type RequestContext struct {
-	Request    *Request
-	Dispatcher Dispatcher
-	Scope      RequestScope
+	Request *Request
+	Scope   RequestScope
 }
 
 func NewRequestContext(identifier Identifier, verb Verb) *RequestContext {
@@ -30,15 +27,12 @@ func (c *RequestContext) IssueRequest(req *Request) (Representation, error) {
 
 	newReqCtx := NewRequestContext(req.Identifier, c.Request.Verb)
 	newReqCtx.Scope = c.Scope
-	newReqCtx.Dispatcher = c.Dispatcher
 
-	if c.Dispatcher == nil {
-		return nil, fmt.Errorf("context dispatcher is nil")
-	}
+	d := NewCoreDispatcher()
 
-	resp, err := c.Dispatcher.Dispatch(newReqCtx)
+	resp, err := d.Dispatch(newReqCtx)
 	if err != nil {
-		log.Error("failed to disptach with request context dispatcher", "err", err)
+		log.Error("failed to dispatch request", "err", err)
 		return nil, err
 	}
 	return resp, nil

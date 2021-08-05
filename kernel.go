@@ -1,15 +1,12 @@
 package roc
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/treethought/roc/proto"
-	"google.golang.org/grpc"
 )
 
 type Kernel struct {
@@ -18,20 +15,13 @@ type Kernel struct {
 	Dispatcher Dispatcher
 	logger     hclog.Logger
 	plugins    map[string]PhysicalEndpoint
-
-	// TODO maybe remove this. ephermeral server created
-	// for endpoint grpc client works
-	// this is just trying to get transport working
-	broker         *plugin.GRPCBroker
-	dispatchServer uint32
 }
 
 func NewKernel() *Kernel {
 	k := &Kernel{
 		Spaces:     make(map[Identifier]Space),
 		receiver:   make(chan *RequestContext),
-		broker:     &plugin.GRPCBroker{},
-		Dispatcher: &CoreDispatcher{},
+		Dispatcher: NewCoreDispatcher(),
 		logger: hclog.New(&hclog.LoggerOptions{
 			Level:       hclog.Info,
 			Output:      os.Stderr,
@@ -43,66 +33,6 @@ func NewKernel() *Kernel {
 	}
 
 	return k
-}
-
-type CoreDispatcher struct {
-}
-
-func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) Endpoint {
-	log.Info("resolving request", "identifier", ctx.Request.Identifier)
-
-	c := make(chan (Endpoint))
-	for _, s := range ctx.Scope.Spaces {
-		log.Info("checking space: ", "space", s.Identifier)
-		go s.Resolve(ctx, c)
-	}
-
-	return <-c
-}
-
-func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
-	log.Warn("receivied disptach call",
-		"identifier", ctx.Request.Identifier,
-		"scope_size", len(ctx.Scope.Spaces),
-	)
-
-	endpoint := d.resolveEndpoint(ctx)
-	log.Info("resolved to endpoint")
-	phys, ok := endpoint.(PhysicalEndpoint)
-	if !ok {
-		return nil, fmt.Errorf("resolved to non-physical endpoint")
-	}
-
-	defer phys.Client.Kill()
-
-	log.Info("evaluating request",
-		"identifier", ctx.Request.Identifier,
-	)
-	// TODO route verbs to methods
-	rep := endpoint.Source(ctx)
-	log.Warn("returning response from dispatcher",
-		"identifier", ctx.Request.Identifier,
-		"representation", rep,
-	)
-	return rep, nil
-}
-
-func (k *Kernel) startDisptcher() {
-	dispatchServer := &DispatcherGRPCServer{Impl: k.Dispatcher}
-
-	var s *grpc.Server
-
-	serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
-		s = grpc.NewServer(opts...)
-		proto.RegisterDispatcherServer(s, dispatchServer)
-		return s
-	}
-
-	brokerID := k.broker.NextId()
-	log.Info("starting kernel core dispatcher", "broker", brokerID)
-	go k.broker.AcceptAndServe(brokerID, serverFunc)
-	k.dispatchServer = brokerID
-
 }
 
 func (k Kernel) startTransport() (PhysicalTransport, error) {
@@ -123,7 +53,7 @@ func (k Kernel) startTransport() (PhysicalTransport, error) {
 		scope.Spaces = append(scope.Spaces, s)
 	}
 
-	initMsg := &InitTransport{Scope: scope, Dispatcher: k.Dispatcher}
+	initMsg := &InitTransport{Scope: scope}
 
 	err := phys.Init(initMsg)
 	if err != nil {
@@ -135,7 +65,6 @@ func (k Kernel) startTransport() (PhysicalTransport, error) {
 }
 
 func (k *Kernel) Start() error {
-	// k.startDisptcher()
 	transport, err := k.startTransport()
 	if err != nil {
 		log.Error("error starting transport:", "err", err)
@@ -154,7 +83,7 @@ func (k *Kernel) Start() error {
 
 func (k *Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 	if k.Dispatcher == nil {
-		k.Dispatcher = &CoreDispatcher{}
+		k.Dispatcher = NewCoreDispatcher()
 	}
 	for _, s := range k.Spaces {
 		k.logger.Debug("adding to scope", "space", s.Identifier)
@@ -165,10 +94,7 @@ func (k *Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 		"num_spaces", len(ctx.Scope.Spaces),
 	)
 
-	ctx.Dispatcher = k.Dispatcher
 	return k.Dispatcher.Dispatch(ctx)
-
-	// return DispatchRequest(ctx)
 }
 
 func (k *Kernel) Register(spaces ...Space) {

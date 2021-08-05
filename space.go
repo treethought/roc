@@ -10,7 +10,7 @@ import (
 
 var log = hclog.New(&hclog.LoggerOptions{
 	DisableTime: true,
-    Level: hclog.Debug,
+	Level:       hclog.Debug,
 })
 
 type SpaceDefinition struct {

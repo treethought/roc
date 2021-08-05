@@ -64,13 +64,11 @@ message RequestScope {
 }
 message RequestContext {
 	Request request = 1;
-	uint32 dispatcher_server = 2;
 	RequestScope scope = 3;
 }
 
 message InitTransport {
 	RequestScope scope = 1;
-	uint32 dispatcher_server = 2;
 }
 
 service Dispatcher {

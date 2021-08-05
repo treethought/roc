@@ -12,8 +12,7 @@ import (
 const EndpointTypeTransport string = "transport"
 
 type InitTransport struct {
-	Scope      RequestScope
-	Dispatcher Dispatcher
+	Scope RequestScope
 }
 
 // EndpointTransport is an endpoint that issues external events into the roc system
@@ -35,24 +34,6 @@ type TransportImpl struct {
 	dispatchServer uint32
 }
 
-func (t TransportImpl) startDispatcher() {
-	log.Info("starting transport's dispatcher")
-	dispatcher := &CoreDispatcher{}
-	dispatchServer := &DispatcherGRPCServer{Impl: dispatcher}
-
-	var s *grpc.Server
-
-	serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
-		s = grpc.NewServer(opts...)
-		proto.RegisterDispatcherServer(s, dispatchServer)
-		return s
-	}
-
-	brokerID := t.broker.NextId()
-	go t.broker.AcceptAndServe(brokerID, serverFunc)
-	t.dispatchServer = brokerID
-}
-
 func NewTransport(name string) *TransportImpl {
 	// this is done inside the transport plugin
 	return &TransportImpl{
@@ -60,14 +41,13 @@ func NewTransport(name string) *TransportImpl {
 		Scope:      RequestScope{},
 		OnInit:     func() error { return nil },
 		broker:     &plugin.GRPCBroker{},
-		Dispatcher: &CoreDispatcher{},
+		Dispatcher: NewCoreDispatcher(),
 	}
 }
 
 func (t *TransportImpl) Init(msg *InitTransport) error {
 	log.Debug("initializing transport scope")
 	t.Scope = msg.Scope
-	t.Dispatcher = msg.Dispatcher
 	log.Info("transporter has been initialized", "scope", t.Scope, "dispatcher", t.Dispatcher)
 	return t.OnInit()
 }
@@ -82,14 +62,12 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
 	}
 
-	// ctx.Scope = t.Scope
+	ctx.Scope = t.Scope
 
 	log.Info("dispatching request from transport",
 		"num_spaces", len(ctx.Scope.Spaces),
 	)
 
-	log.Info("setting context dispatcher", "dispatcher", t.Dispatcher)
-	ctx.Dispatcher = t.Dispatcher
 	return t.Dispatcher.Dispatch(ctx)
 }
 
@@ -133,10 +111,10 @@ func ServeTransport(e Transport) {
 		"transport": &TransportPlugin{Impl: e},
 	}
 
-	t, ok := e.(*TransportImpl)
-	if ok {
-		t.startDispatcher()
-	}
+	// t, ok := e.(*TransportImpl)
+	// if ok {
+	// 	t.startDispatcher()
+	// }
 
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: Handshake,

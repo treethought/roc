@@ -13,3 +13,11 @@ spaces:
       groups:
         - name: nameArg
           regex: ".*"
+
+  - name: testfile
+    cmd: ./bin/fileset
+    grammar:
+      base: res://file/
+      groups:
+        - name: path
+          regex: ".*"

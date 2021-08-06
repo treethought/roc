@@ -17,15 +17,12 @@ type SpaceDefinition struct {
 	Spaces []Space `json:"spaces" yaml:"spaces"`
 }
 
-type GrammarDefinition struct {
-	Base string `json:"base" yaml:"base"`
-	// parts []grammarElement `json:"parts,omitempty" yaml:"parts,omitempty"`
+type EndpointDefinition struct {
+	Name         string  `json:"name,omitempty" yaml:"name,omitempty"`
+	Grammar      Grammar `json:"grammar,omitempty" yaml:"grammar,omitempty"`
+	Cmd          string  `json:"cmd,omitempty" yaml:"cmd,omitempty"`
 }
 
-type EndpointDefinition struct {
-	Name    string            `json:"name,omitempty" yaml:"name,omitempty"`
-	Grammar GrammarDefinition `json:"grammar,omitempty" yaml:"grammar,omitempty"`
-	Cmd     string            `json:"cmd,omitempty" yaml:"cmd,omitempty"`
 }
 
 type Space struct {
@@ -54,7 +51,7 @@ func LoadSpaces(path string) []Space {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Error("failed to read config file", "error", err)
-		os.Exit(1)
+		return []Space{}, nil
 	}
 
 	def := SpaceDefinition{}
@@ -63,14 +60,13 @@ func LoadSpaces(path string) []Space {
 		log.Error("failed to parse space definition", err)
 		os.Exit(1)
 	}
-	return def.Spaces
+	return def.Spaces, nil
 
 }
 
 func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
-	grammar := NewGrammar(e.Grammar.Base)
-	log.Debug("checking grammar", "grammar", grammar.String(), "identifier", ctx.Request.Identifier)
-	resolve := grammar.Match(ctx.Request.Identifier)
+	log.Debug("checking grammar", "grammar", e.Grammar.String(), "identifier", ctx.Request.Identifier)
+	resolve := e.Grammar.Match(ctx.Request.Identifier)
 	return resolve
 
 }

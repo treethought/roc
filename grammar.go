@@ -13,28 +13,31 @@ type grammar interface {
 }
 
 type Grammar struct {
-	Base  *url.URL
-	parts []grammarElement
+	Base   string `json:"base,omitempty" yaml:"base,omitempty"`
+	Groups []groupElement `json:"groups,omitempty" yaml:"groups,omitempty"`
+	uri    *url.URL
 }
 
-func NewGrammar(base string) Grammar {
+func NewGrammar(base string, elems ...groupElement) (Grammar, error) {
 	uri, err := url.Parse(base)
 	if err != nil {
 		log.Error(err.Error())
-		os.Exit(1)
+		return Grammar{}, err
 	}
 
 	grammar := Grammar{
-		Base: uri,
+		Base:   uri.String(),
+		Groups: elems,
+        uri: uri,
 	}
-	return grammar
+	return grammar, nil
 }
 
 func (g Grammar) String() string {
-	if g.Base == nil {
+	if g.uri == nil {
 		return ""
 	}
-	return g.Base.String()
+	return g.uri.String()
 }
 
 func (g Grammar) Match(i Identifier) bool {
@@ -52,19 +55,19 @@ func (g Grammar) Match(i Identifier) bool {
 		return false
 	}
 
-	if uri.Scheme != g.Base.Scheme {
+	if uri.Scheme != g.uri.Scheme {
 		return false
 	}
 
-	if uri.Host != g.Base.Host {
+	if uri.Host != g.uri.Host {
 		return false
 	}
 
-	if uri.Path != g.Base.Path {
+	if uri.Path != g.uri.Path {
 		return false
 	}
 	log.Info("grammar matches",
-		"grammar", g.Base.String(),
+		"grammar", g.uri.String(),
 		"identifier", i,
 	)
 

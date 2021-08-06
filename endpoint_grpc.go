@@ -20,7 +20,7 @@ func newProtoSpace(space Space) *proto.Space {
 		protoSpace.EndpointDefinitions = append(protoSpace.EndpointDefinitions, &proto.EndpointDefinition{
 			Name: ed.Name,
 			Cmd:  ed.Cmd,
-			Grammar: &proto.GrammarDefinition{
+			Grammar: &proto.Grammar{
 				Base: ed.Grammar.Base,
 			},
 		})
@@ -35,12 +35,15 @@ func newProtoSpace(space Space) *proto.Space {
 func protoToSpace(p *proto.Space) Space {
 	space := NewSpace(Identifier(p.Identifier))
 	for _, ed := range p.EndpointDefinitions {
+        grammar, err := NewGrammar(ed.Grammar.Base)
+        if err != nil {
+            panic(err)
+        }
+
 		space.EndpointDefinitions = append(space.EndpointDefinitions, EndpointDefinition{
 			Name: ed.Name,
 			Cmd:  ed.Cmd,
-			Grammar: GrammarDefinition{
-				Base: ed.Grammar.Base,
-			},
+			Grammar: grammar,
 		})
 	}
 

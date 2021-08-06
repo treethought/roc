@@ -56,10 +56,8 @@ message Request {
   string identifier = 1;
   Verb verb = 2;
   string representation_class = 3;
-  MapField arguments = 4;
-  MapField headers = 5;
-  /* Map<string, repeated string> arguments = 4; */
-  /* Map<string, repeated string> headers = 5; */
+  repeated MapField arguments  = 4;
+  repeated MapField headers  = 5;
 }
 
 message IdentifierResponse {

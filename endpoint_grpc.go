@@ -82,6 +82,22 @@ func protoToSpace(p *proto.Space) Space {
 	}
 	return space
 
+func newProtoMap(args map[string][]string) []*proto.MapField {
+
+	fields := []*proto.MapField{}
+	for k, v := range args {
+		p := &proto.MapField{Key: k, Value: v}
+		fields = append(fields, p)
+	}
+	return fields
+}
+func protoToMap(p []*proto.MapField) map[string][]string {
+	res := make(map[string][]string)
+	for _, f := range p {
+		res[f.Key] = f.Value
+	}
+	return res
+
 }
 
 func newProtoContext(ctx *RequestContext) *proto.RequestContext {
@@ -90,7 +106,7 @@ func newProtoContext(ctx *RequestContext) *proto.RequestContext {
 			Identifier: fmt.Sprint(ctx.Request.Identifier),
 			Verb:       proto.Verb(ctx.Request.Verb),
 			//TODO
-			// Arguments:
+			Arguments: newProtoMap(ctx.Request.Arguments),
 		},
 		Scope: &proto.RequestScope{
 			Spaces: []*proto.Space{},
@@ -112,6 +128,9 @@ func protoToContext(p *proto.RequestContext) *RequestContext {
 	for _, s := range p.Scope.Spaces {
 		ctx.Scope.Spaces = append(ctx.Scope.Spaces, protoToSpace(s))
 	}
+
+	args := protoToMap(p.Request.Arguments)
+	ctx.Request.Arguments = args
 
 	return ctx
 

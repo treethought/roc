@@ -45,6 +45,10 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 		for _, val := range v {
 			endpoint := NewTransientEndpoint(val)
 			transientDefs = append(transientDefs, endpoint.Definition())
+
+            log.Info("creating transient endpoint", "definition", endpoint.Definition())
+
+
 			refArgs[k] = append(refArgs[k], endpoint.Identifier().String())
             log.Debug("set argument refernece", "name", k, "ref", endpoint.Identifier().String())
 		}
@@ -52,7 +56,7 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 
 	dynamicSpace := NewSpace(Identifier(spaceID), transientDefs...)
 	ctx.Scope.Spaces = append(ctx.Scope.Spaces, dynamicSpace)
-	ctx.Arguments = refArgs
+    ctx.Request.Arguments = refArgs
 
 	// TODO
 
@@ -86,7 +90,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	switch ed.Type() {
 	case EndpointTypeTransient:
-		endpoint = NewTransientEndpoint(ed.literal)
+		endpoint = NewTransientEndpoint(ed.Literal)
 
 	case EndpointTypeAccessor:
 		endpoint = NewPhysicalEndpoint(ed.Cmd)

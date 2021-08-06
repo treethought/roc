@@ -38,6 +38,8 @@ message EndpointDefinition {
 	string name   = 1; 
 	Grammar grammar = 2;
 	string cmd = 3;
+	string endpoint_type = 4;
+	Representation literal = 5;
 }
 
 message Space {

@@ -21,13 +21,13 @@ type EndpointDefinition struct {
 	Name         string  `json:"name,omitempty" yaml:"name,omitempty"`
 	Grammar      Grammar `json:"grammar,omitempty" yaml:"grammar,omitempty"`
 	Cmd          string  `json:"cmd,omitempty" yaml:"cmd,omitempty"`
-	endpointType string
-	literal      Representation
+	EndpointType string
+	Literal      Representation
 }
 
 func (ed EndpointDefinition) Type() string {
-	if ed.endpointType != "" {
-		return ed.endpointType
+	if ed.EndpointType != "" {
+		return ed.EndpointType
 	}
 	return EndpointTypeAccessor
 }

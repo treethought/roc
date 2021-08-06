@@ -35,9 +35,9 @@ func NewTransientEndpoint(rep Representation) TransientEndpoint {
 func (e *TransientEndpoint) Definition() EndpointDefinition {
     return EndpointDefinition{
         Name: e.Grammar.String(),
-        endpointType: EndpointTypeTransient,
+        EndpointType: EndpointTypeTransient,
         Grammar: e.Grammar,
-        literal: e.Representation,
+        Literal: e.Representation,
     }
 }
 

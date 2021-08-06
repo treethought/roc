@@ -9,7 +9,7 @@ spaces:
   - name: namer
     cmd: ./bin/namer
     grammar:
-      base: res://name
+      base: res://name/
       groups:
         - name: nameArg
           regex: ".*"

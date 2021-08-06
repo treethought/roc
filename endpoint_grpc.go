@@ -14,15 +14,50 @@ type EndpointGRPC struct {
 	client proto.EndpointClient
 }
 
+func newProtoGrammar(g Grammar) *proto.Grammar {
+    pg := &proto.Grammar{
+        Base: g.Base,
+    }
+    for _, group := range g.Groups {
+        pgroup := &proto.GroupElement{
+            Name: group.Name,
+            Min: group.Min,
+            Max: group.Max,
+            Encoding: group.Encoding,
+            Regex: group.Regex,
+        }
+        pg.Groups = append(pg.Groups, pgroup)
+    }
+
+    return pg
+}
+ 
+func protoToGrammar(p *proto.Grammar) Grammar {
+    g, err := NewGrammar(p.Base)
+    if err != nil {
+        panic(err)
+    }
+    for _, group := range p.Groups {
+        gel := GroupElement{
+            Name: group.Name,
+            Min: group.Min,
+            Max: group.Max,
+            Encoding: group.Encoding,
+            Regex: group.Regex,
+        }
+        g.Groups = append(g.Groups, gel)
+    }
+    return g
+
+}
+
 func newProtoSpace(space Space) *proto.Space {
 	protoSpace := &proto.Space{Identifier: fmt.Sprint(space.Identifier)}
 	for _, ed := range space.EndpointDefinitions {
 		protoSpace.EndpointDefinitions = append(protoSpace.EndpointDefinitions, &proto.EndpointDefinition{
 			Name: ed.Name,
 			Cmd:  ed.Cmd,
-			Grammar: &proto.Grammar{
-				Base: ed.Grammar.Base,
-			},
+            Grammar: newProtoGrammar(ed.Grammar),
 		})
 	}
 	for _, s := range space.Imports {
@@ -35,15 +70,10 @@ func newProtoSpace(space Space) *proto.Space {
 func protoToSpace(p *proto.Space) Space {
 	space := NewSpace(Identifier(p.Identifier))
 	for _, ed := range p.EndpointDefinitions {
-        grammar, err := NewGrammar(ed.Grammar.Base)
-        if err != nil {
-            panic(err)
-        }
-
 		space.EndpointDefinitions = append(space.EndpointDefinitions, EndpointDefinition{
 			Name: ed.Name,
 			Cmd:  ed.Cmd,
-			Grammar: grammar,
+			Grammar: protoToGrammar(ed.Grammar),
 		})
 	}
 

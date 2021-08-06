@@ -16,9 +16,23 @@ message Representation {
 	string value = 1;
 }
 
+message StringSlice {
+	repeated string values = 1;
+}
+
+message GroupElement {
+	string name = 1;
+	uint64 min = 2;
+	uint64 max = 3;
+	string encoding = 4;
+	string regex = 5;
+}
+
 message Grammar {
 	string base = 1;
+	repeated GroupElement groups = 2;
 }
+
 
 message EndpointDefinition {
 	string name   = 1; 

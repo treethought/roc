@@ -1,8 +1,8 @@
 package roc
 
 import (
+	"fmt"
 	"io/ioutil"
-	"os"
 
 	"github.com/hashicorp/go-hclog"
 	"gopkg.in/yaml.v3"
@@ -47,7 +47,11 @@ func NewSpace(identifier Identifier, endpoints ...EndpointDefinition) Space {
 	return s
 }
 
-func LoadSpaces(path string) []Space {
+func (s *Space) BindEndpoint(e EndpointDefinition) {
+	s.EndpointDefinitions = append(s.EndpointDefinitions, e)
+}
+
+func LoadSpaces(path string) ([]Space, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Error("failed to read config file", "error", err)
@@ -58,7 +62,7 @@ func LoadSpaces(path string) []Space {
 	err = yaml.Unmarshal(data, &def)
 	if err != nil {
 		log.Error("failed to parse space definition", err)
-		os.Exit(1)
+        return def.Spaces, fmt.Errorf("failed to parse space definitions")
 	}
 	return def.Spaces, nil
 

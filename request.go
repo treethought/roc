@@ -9,7 +9,7 @@ type Request struct {
 	Identifier          Identifier
 	Verb                Verb
 	RepresentationClass RepresentationClass
-	Arguments          map[string][]string
+	Arguments           map[string][]string
 	Headers             http.Header
 }
 
@@ -18,7 +18,7 @@ func NewRequest(i Identifier, verb Verb, class RepresentationClass) *Request {
 		Identifier:          i,
 		Verb:                verb,
 		RepresentationClass: class,
-        Arguments: make(map[string][]string),
+		Arguments:           make(map[string][]string),
 	}
 }
 

@@ -12,9 +12,8 @@ const EndpointTypeAccessor string = "accessor"
 // Accessor is a struct implementing the default behavior for an empty EndpointAccessor
 // This type is useful for embedding with custom implementations of EndpointAccessor
 type Accessor struct {
-    BaseEndpoint
+	BaseEndpoint
 	// grammar Grammar `yaml:"grammar,omitempty"`
-	Name   string
 	Logger hclog.Logger
 }
 

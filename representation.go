@@ -5,7 +5,7 @@ package roc
 type Identifier string
 
 func (i Identifier) String() string {
-    return string(i)
+	return string(i)
 }
 
 type RepresentationClass interface {

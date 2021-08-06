@@ -46,17 +46,16 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 			endpoint := NewTransientEndpoint(val)
 			transientDefs = append(transientDefs, endpoint.Definition())
 
-            log.Info("creating transient endpoint", "definition", endpoint.Definition())
-
+			log.Info("creating transient endpoint", "definition", endpoint.Definition())
 
 			refArgs[k] = append(refArgs[k], endpoint.Identifier().String())
-            log.Debug("set argument refernece", "name", k, "ref", endpoint.Identifier().String())
+			log.Debug("set argument refernece", "name", k, "ref", endpoint.Identifier().String())
 		}
 	}
 
 	dynamicSpace := NewSpace(Identifier(spaceID), transientDefs...)
 	ctx.Scope.Spaces = append(ctx.Scope.Spaces, dynamicSpace)
-    ctx.Request.Arguments = refArgs
+	ctx.Request.Arguments = refArgs
 
 	// TODO
 

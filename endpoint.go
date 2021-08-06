@@ -46,7 +46,7 @@ type Endpoint interface {
 	// Meta(ctx RequestContextArgument) map[string][]string
 }
 
-type BaseEndpoint struct {}
+type BaseEndpoint struct{}
 
 func (e BaseEndpoint) Source(ctx *RequestContext) Representation {
 	return nil
@@ -87,7 +87,6 @@ func (e BaseEndpoint) Evaluate(ctx *RequestContext) Representation {
 
 	}
 }
-
 
 // This is the implementation of plugin.Plugin so we can serve/consume this
 //

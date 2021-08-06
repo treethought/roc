@@ -69,7 +69,7 @@ func LoadSpaces(path string) ([]Space, error) {
 	err = yaml.Unmarshal(data, &def)
 	if err != nil {
 		log.Error("failed to parse space definition", err)
-        return def.Spaces, fmt.Errorf("failed to parse space definitions")
+		return def.Spaces, fmt.Errorf("failed to parse space definitions")
 	}
 	return def.Spaces, nil
 

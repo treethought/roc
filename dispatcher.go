@@ -12,10 +12,10 @@ func NewCoreDispatcher() *CoreDispatcher {
 	return &CoreDispatcher{}
 }
 
-func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) Endpoint {
+func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition {
 	log.Info("resolving request", "identifier", ctx.Request.Identifier)
 
-	c := make(chan (Endpoint))
+	c := make(chan (EndpointDefinition))
 	for _, s := range ctx.Scope.Spaces {
 		log.Info("checking space: ", "space", s.Identifier)
 		go s.Resolve(ctx, c)
@@ -30,21 +30,33 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		"scope_size", len(ctx.Scope.Spaces),
 	)
 
-	endpoint := d.resolveEndpoint(ctx)
-	log.Info("resolved to endpoint")
-	phys, ok := endpoint.(PhysicalEndpoint)
-	if !ok {
-		return nil, fmt.Errorf("resolved to non-physical endpoint")
+	ed := d.resolveEndpoint(ctx)
+	log.Info("resolved to endpoint", "endpoint", ed, "type", ed.Type())
+	var endpoint Endpoint
+
+	switch ed.Type() {
+	case EndpointTypeAccessor:
+		endpoint = NewPhysicalEndpoint(ed.Cmd)
+
+	default:
+		log.Error("Unknown endpoint type", "endpoint", ed)
+		return nil, fmt.Errorf("unknown endpoint type")
 	}
 
-	defer phys.Client.Kill()
+	phys, ok := endpoint.(PhysicalEndpoint)
+	if ok {
+		defer phys.Client.Kill()
+	}
+
 
 	log.Info("evaluating request",
 		"identifier", ctx.Request.Identifier,
 	)
-	// TODO route verbs to methods
 	rep := endpoint.Source(ctx)
-	log.Warn("returning response from dispatcher",
+
+	// TODO route verbs to methods
+	// rep := endpoint.Source(ctx)
+	log.Debug("returning response from dispatcher",
 		"identifier", ctx.Request.Identifier,
 		"representation", rep,
 	)

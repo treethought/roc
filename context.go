@@ -7,6 +7,7 @@ type RequestScope struct {
 type RequestContext struct {
 	Request *Request
 	Scope   RequestScope
+    Arguments map[string][]string
 }
 
 func NewRequestContext(identifier Identifier, verb Verb) *RequestContext {
@@ -14,6 +15,7 @@ func NewRequestContext(identifier Identifier, verb Verb) *RequestContext {
 	return &RequestContext{
 		Request: req,
 		Scope:   RequestScope{},
+        Arguments: make(map[string][]string),
 	}
 }
 
@@ -27,6 +29,7 @@ func (c *RequestContext) IssueRequest(req *Request) (Representation, error) {
 
 	newReqCtx := NewRequestContext(req.Identifier, c.Request.Verb)
 	newReqCtx.Scope = c.Scope
+    newReqCtx.Arguments = c.Arguments
 
 	d := NewCoreDispatcher()
 

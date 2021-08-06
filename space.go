@@ -21,8 +21,14 @@ type EndpointDefinition struct {
 	Name         string  `json:"name,omitempty" yaml:"name,omitempty"`
 	Grammar      Grammar `json:"grammar,omitempty" yaml:"grammar,omitempty"`
 	Cmd          string  `json:"cmd,omitempty" yaml:"cmd,omitempty"`
+	endpointType string
 }
 
+func (ed EndpointDefinition) Type() string {
+	if ed.endpointType != "" {
+		return ed.endpointType
+	}
+	return EndpointTypeAccessor
 }
 
 type Space struct {
@@ -75,7 +81,7 @@ func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
 
 }
 
-func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
+func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 	for _, ed := range s.EndpointDefinitions {
 		log.Info("interrogating endpoint",
 			"space", s.Identifier,
@@ -86,15 +92,9 @@ func (s Space) Resolve(ctx *RequestContext, c chan (Endpoint)) {
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
 			log.Info("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
-			c <- NewPhysicalEndpoint(ed.Cmd)
+			c <- ed
 			close(c)
 		}
 	}
 }
 
-// // Bind binds an endpoint to to the space using it's grammar
-// func (s *Space) Bind(endpoint PhysicalEndpoint) {
-// 	// TODO map of identifiers -> endpoint?
-// 	s.Endpoints = append(s.Endpoints, endpoint)
-
-// }

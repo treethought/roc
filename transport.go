@@ -30,8 +30,6 @@ type TransportImpl struct {
 	Scope          RequestScope
 	OnInit         func() error
 	Dispatcher     Dispatcher
-	broker         *plugin.GRPCBroker
-	dispatchServer uint32
 }
 
 func NewTransport(name string) *TransportImpl {
@@ -40,7 +38,6 @@ func NewTransport(name string) *TransportImpl {
 		Accessor:   NewAccessor(name),
 		Scope:      RequestScope{},
 		OnInit:     func() error { return nil },
-		broker:     &plugin.GRPCBroker{},
 		Dispatcher: NewCoreDispatcher(),
 	}
 }
@@ -110,11 +107,6 @@ func ServeTransport(e Transport) {
 	var pluginMap = map[string]plugin.Plugin{
 		"transport": &TransportPlugin{Impl: e},
 	}
-
-	// t, ok := e.(*TransportImpl)
-	// if ok {
-	// 	t.startDispatcher()
-	// }
 
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: Handshake,

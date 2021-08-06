@@ -5,6 +5,9 @@ import (
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
+	"github.com/treethought/roc/proto"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 func Serve(e Endpoint) {
@@ -24,6 +27,7 @@ func Serve(e Endpoint) {
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: Handshake,
 		Plugins:         pluginMap,
+		GRPCServer:      plugin.DefaultGRPCServer,
 	})
 
 }
@@ -70,3 +74,20 @@ func (p *EndpointPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
 func (EndpointPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
 	return &EndpointRPC{client: c}, nil
 }
+
+func (e *EndpointPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+	proto.RegisterEndpointServer(s, &EndpointGRPCServer{
+		Impl:   e.Impl,
+		broker: broker,
+	})
+	return nil
+}
+
+func (p *EndpointPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &EndpointGRPC{
+		client: proto.NewEndpointClient(c),
+		broker: broker,
+	}, nil
+}
+
+var _ plugin.GRPCPlugin = &EndpointPlugin{}

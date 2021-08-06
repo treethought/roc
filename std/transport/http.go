@@ -18,21 +18,22 @@ type HttpTransport struct {
 
 func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
 	identifier := roc.Identifier(fmt.Sprintf("res:/%s", req.URL.Path))
+	log.Info("mapped http request to identifier", "identifier", identifier)
 
-	log.Warn("mapped request to identifier", "identifier", identifier)
+	// TODO refactor to use roc.Source()?
 
 	ctx := roc.NewRequestContext(identifier, roc.Source)
-	ctx.Scope = t.Scope
-	resp, err := roc.DispatchRequest(ctx)
+	// ctx.Scope = t.Scope
+
+	resp, err := t.Dispatch(ctx)
 	if err != nil {
+		log.Error("failed to dispatch request", "err", err)
 		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	log.Info("got response")
 	r := fmt.Sprintf("%+v", resp)
-	log.Info(r)
-
+	log.Info("returning response to http client", "response", r)
 	w.Write([]byte(r))
 
 }

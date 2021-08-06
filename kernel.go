@@ -1,7 +1,6 @@
 package roc
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,12 +14,14 @@ type Kernel struct {
 	receiver   chan (*RequestContext)
 	Dispatcher Dispatcher
 	logger     hclog.Logger
+	plugins    map[string]PhysicalEndpoint
 }
 
 func NewKernel() *Kernel {
 	k := &Kernel{
-		Spaces:   make(map[Identifier]Space),
-		receiver: make(chan *RequestContext),
+		Spaces:     make(map[Identifier]Space),
+		receiver:   make(chan *RequestContext),
+		Dispatcher: NewCoreDispatcher(),
 		logger: hclog.New(&hclog.LoggerOptions{
 			Level:       hclog.Info,
 			Output:      os.Stderr,
@@ -38,7 +39,7 @@ func (k Kernel) startTransport() (PhysicalTransport, error) {
 	k.logger.Info("creating http transport")
 	httpt := NewPhysicalTransport("./bin/std/transport")
 
-	log.Info("initializing transport scope")
+	log.Debug("initializing transport scope")
 
 	phys, ok := httpt.(PhysicalTransport)
 	if !ok {
@@ -52,17 +53,21 @@ func (k Kernel) startTransport() (PhysicalTransport, error) {
 		scope.Spaces = append(scope.Spaces, s)
 	}
 
-	err := phys.Init(scope)
+	initMsg := &InitTransport{Scope: scope}
+
+	err := phys.Init(initMsg)
 	if err != nil {
 		log.Error("failed to initialize transport scope", "transport", httpt)
+		return phys, err
 	}
+	log.Info("initialized transport")
 	return phys, nil
 }
 
 func (k *Kernel) Start() error {
 	transport, err := k.startTransport()
 	if err != nil {
-		fmt.Println(err)
+		log.Error("error starting transport:", "err", err)
 		os.Exit(1)
 	}
 
@@ -76,7 +81,10 @@ func (k *Kernel) Start() error {
 	return nil
 }
 
-func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
+func (k *Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
+	if k.Dispatcher == nil {
+		k.Dispatcher = NewCoreDispatcher()
+	}
 	for _, s := range k.Spaces {
 		k.logger.Debug("adding to scope", "space", s.Identifier)
 		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
@@ -86,7 +94,7 @@ func (k Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 		"num_spaces", len(ctx.Scope.Spaces),
 	)
 
-	return DispatchRequest(ctx)
+	return k.Dispatcher.Dispatch(ctx)
 }
 
 func (k *Kernel) Register(spaces ...Space) {

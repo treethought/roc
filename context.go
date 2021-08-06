@@ -6,17 +6,14 @@ type RequestScope struct {
 
 type RequestContext struct {
 	Request *Request
-
-	// TODO set as contetx value instead
-	// Dispatcher Dispatcher
-	Dispatcher Dispatcher
-	Scope      RequestScope
+	Scope   RequestScope
 }
 
 func NewRequestContext(identifier Identifier, verb Verb) *RequestContext {
 	req := NewRequest(identifier, verb, nil)
 	return &RequestContext{
 		Request: req,
+		Scope:   RequestScope{},
 	}
 }
 
@@ -26,24 +23,19 @@ func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
 }
 
 func (c *RequestContext) IssueRequest(req *Request) (Representation, error) {
-	// newCtx, done := context.WithCancel(c.Context)
-	// defer done()
-	// if len(c.Dispatcher.Spaces) == 0 {
-	// 	return nil, fmt.Errorf("dispatcher has no spaces to resolve")
-	// }
+	log.Info("issuing new request")
 
 	newReqCtx := NewRequestContext(req.Identifier, c.Request.Verb)
 	newReqCtx.Scope = c.Scope
-	// if len(newReqCtx.Scope.Spaces) == 0 {
-	//     return nil, fmt.Errorf("request scope has no spaces")
-	// }
-	// newReqCtx.Scope.EndpointClients = c.Scope.EndpointClients
 
-	return DispatchRequest(newReqCtx)
-	// dispatcher := NewPhysicalDispatcher()
+	d := NewCoreDispatcher()
 
-	// return dispatcher.Dispatch(newReqCtx)
-
+	resp, err := d.Dispatch(newReqCtx)
+	if err != nil {
+		log.Error("failed to dispatch request", "err", err)
+		return nil, err
+	}
+	return resp, nil
 }
 
 // // Source is a helper method to create and issue a new SOURCE request for the identifier

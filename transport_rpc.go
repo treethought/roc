@@ -13,9 +13,9 @@ type TransportRPC struct {
 }
 
 // Init is a special method for Transport endpoints to deliver their request scope upon intialization
-func (e *TransportRPC) Init(scope RequestScope) error {
+func (e *TransportRPC) Init(msg *InitTransport) error {
 	var resp error
-	err := e.client.Call("Plugin.Init", scope, &resp)
+	err := e.client.Call("Plugin.Init", msg, &resp)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -33,8 +33,8 @@ type TransportRPCServer struct {
 	Impl Transport
 }
 
-func (s *TransportRPCServer) Init(scope RequestScope, resp *error) error {
-	s.Impl.Init(scope)
+func (s *TransportRPCServer) Init(msg *InitTransport, resp *error) error {
+	s.Impl.Init(msg)
 	*resp = nil
 	return nil
 }

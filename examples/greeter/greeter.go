@@ -21,12 +21,13 @@ func New() *MyEndpoint {
 
 // Source retrieves representation of resource
 func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
-	e.Logger.Info("Sourcing in greeter", ctx.Request.Identifier)
-	e.Logger.Warn("Making subrequest", "target", ctx.Request.Identifier)
+	e.Logger.Info("Executing source in greeter", "identifier", ctx.Request.Identifier)
+
+	e.Logger.Warn("Making subrequest", "target", "res://name")
 
 	name, err := ctx.Source("res://name", nil)
 	if err != nil {
-		e.Logger.Error("failed to dispatch request", "error", err)
+		e.Logger.Error("failed to dispatch subrequest request", "error", err)
 	}
 	return fmt.Sprintf("hello world: %s", name)
 }

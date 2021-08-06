@@ -2,7 +2,6 @@ package roc
 
 import (
 	"net/http"
-	"net/url"
 )
 
 // Request represents request for a resouce
@@ -10,7 +9,7 @@ type Request struct {
 	Identifier          Identifier
 	Verb                Verb
 	RepresentationClass RepresentationClass
-	Argmuments          url.Values
+	Arguments           map[string][]string
 	Headers             http.Header
 }
 
@@ -19,6 +18,7 @@ func NewRequest(i Identifier, verb Verb, class RepresentationClass) *Request {
 		Identifier:          i,
 		Verb:                verb,
 		RepresentationClass: class,
+		Arguments:           make(map[string][]string),
 	}
 }
 

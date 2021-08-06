@@ -46,6 +46,48 @@ type Endpoint interface {
 	// Meta(ctx RequestContextArgument) map[string][]string
 }
 
+type BaseEndpoint struct{}
+
+func (e BaseEndpoint) Source(ctx *RequestContext) Representation {
+	return nil
+}
+
+func (e BaseEndpoint) Sink(ctx *RequestContext) {}
+
+func (e BaseEndpoint) New(ctx *RequestContext) Identifier {
+	return ""
+}
+func (e BaseEndpoint) Delete(ctx *RequestContext) bool {
+	return false
+}
+func (e BaseEndpoint) Exists(ctx *RequestContext) bool {
+	return false
+}
+func (e BaseEndpoint) Transrept(ctx *RequestContext) Representation {
+	return nil
+}
+
+func (e BaseEndpoint) Evaluate(ctx *RequestContext) Representation {
+
+	switch ctx.Request.Verb {
+	case Source:
+		return e.Source(ctx)
+	case Sink:
+		e.Sink(ctx)
+		return nil
+	case New:
+		return e.New(ctx)
+	case Delete:
+		return e.Delete(ctx)
+	case Exists:
+		return e.Exists(ctx)
+
+	default:
+		return e.Source(ctx)
+
+	}
+}
+
 // This is the implementation of plugin.Plugin so we can serve/consume this
 //
 // This has two methods: Server must return an RPC server for this plugin

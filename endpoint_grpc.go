@@ -14,15 +14,52 @@ type EndpointGRPC struct {
 	client proto.EndpointClient
 }
 
+func newProtoGrammar(g Grammar) *proto.Grammar {
+	pg := &proto.Grammar{
+		Base: g.Base,
+	}
+	for _, group := range g.Groups {
+		pgroup := &proto.GroupElement{
+			Name:     group.Name,
+			Min:      group.Min,
+			Max:      group.Max,
+			Encoding: group.Encoding,
+			Regex:    group.Regex,
+		}
+		pg.Groups = append(pg.Groups, pgroup)
+	}
+
+	return pg
+}
+
+func protoToGrammar(p *proto.Grammar) Grammar {
+	g, err := NewGrammar(p.Base)
+	if err != nil {
+		panic(err)
+	}
+	for _, group := range p.Groups {
+		gel := GroupElement{
+			Name:     group.Name,
+			Min:      group.Min,
+			Max:      group.Max,
+			Encoding: group.Encoding,
+			Regex:    group.Regex,
+		}
+		g.Groups = append(g.Groups, gel)
+	}
+	return g
+
+}
+
 func newProtoSpace(space Space) *proto.Space {
 	protoSpace := &proto.Space{Identifier: fmt.Sprint(space.Identifier)}
 	for _, ed := range space.EndpointDefinitions {
 		protoSpace.EndpointDefinitions = append(protoSpace.EndpointDefinitions, &proto.EndpointDefinition{
-			Name: ed.Name,
-			Cmd:  ed.Cmd,
-			Grammar: &proto.GrammarDefinition{
-				Base: ed.Grammar.Base,
-			},
+			Name:         ed.Name,
+			Cmd:          ed.Cmd,
+			Grammar:      newProtoGrammar(ed.Grammar),
+			EndpointType: ed.EndpointType,
+			Literal:      &proto.Representation{Value: fmt.Sprint(ed.Literal)},
 		})
 	}
 	for _, s := range space.Imports {
@@ -36,11 +73,11 @@ func protoToSpace(p *proto.Space) Space {
 	space := NewSpace(Identifier(p.Identifier))
 	for _, ed := range p.EndpointDefinitions {
 		space.EndpointDefinitions = append(space.EndpointDefinitions, EndpointDefinition{
-			Name: ed.Name,
-			Cmd:  ed.Cmd,
-			Grammar: GrammarDefinition{
-				Base: ed.Grammar.Base,
-			},
+			Name:         ed.Name,
+			Cmd:          ed.Cmd,
+			Grammar:      protoToGrammar(ed.Grammar),
+			EndpointType: ed.EndpointType,
+			Literal:      ed.Literal.Value,
 		})
 	}
 
@@ -50,6 +87,23 @@ func protoToSpace(p *proto.Space) Space {
 	return space
 
 }
+func newProtoMap(args map[string][]string) []*proto.MapField {
+
+	fields := []*proto.MapField{}
+	for k, v := range args {
+		p := &proto.MapField{Key: k, Value: v}
+		fields = append(fields, p)
+	}
+	return fields
+}
+func protoToMap(p []*proto.MapField) map[string][]string {
+	res := make(map[string][]string)
+	for _, f := range p {
+		res[f.Key] = f.Value
+	}
+	return res
+
+}
 
 func newProtoContext(ctx *RequestContext) *proto.RequestContext {
 	protoCtx := &proto.RequestContext{
@@ -57,7 +111,7 @@ func newProtoContext(ctx *RequestContext) *proto.RequestContext {
 			Identifier: fmt.Sprint(ctx.Request.Identifier),
 			Verb:       proto.Verb(ctx.Request.Verb),
 			//TODO
-			// Arguments:
+			Arguments: newProtoMap(ctx.Request.Arguments),
 		},
 		Scope: &proto.RequestScope{
 			Spaces: []*proto.Space{},
@@ -79,6 +133,9 @@ func protoToContext(p *proto.RequestContext) *RequestContext {
 	for _, s := range p.Scope.Spaces {
 		ctx.Scope.Spaces = append(ctx.Scope.Spaces, protoToSpace(s))
 	}
+
+	args := protoToMap(p.Request.Arguments)
+	ctx.Request.Arguments = args
 
 	return ctx
 

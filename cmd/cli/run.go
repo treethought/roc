@@ -17,7 +17,11 @@ var runCmd = &cobra.Command{
 		k := roc.NewKernel()
 
 		fmt.Println("loading space definitions")
-		spaces := roc.LoadSpaces(config)
+		spaces, err := roc.LoadSpaces(config)
+        if err != nil {
+            fmt.Println(err)
+            return
+        }
 		k.Register(spaces...)
 		k.Start()
 

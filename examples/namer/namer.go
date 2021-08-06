@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/treethought/roc"
 )
@@ -19,9 +21,23 @@ func New() *MyEndpoint {
 
 // Source retrieves representation of resource
 func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
-	e.Logger.Debug("Sourcing", ctx.Request)
+	log.Debug("Sourcing", "request", ctx.Request)
 	ctx.Request.SetRepresentationClass(nil)
-	return "BOBO"
+	names, ok := ctx.Request.Arguments["nameArg"]
+	if !ok {
+		return "BOBO"
+	}
+
+	response := ""
+	for _, nameRef := range names {
+		resp, err := ctx.Source(roc.Identifier(nameRef), nil)
+		if err != nil {
+			return "oh no"
+		}
+        response = fmt.Sprintf("%s %s", response, resp)
+	}
+
+	return response
 }
 
 func main() {

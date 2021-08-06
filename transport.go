@@ -27,9 +27,9 @@ type Transport interface {
 // and automatically handles scope initialization
 type TransportImpl struct {
 	*Accessor
-	Scope          RequestScope
-	OnInit         func() error
-	Dispatcher     Dispatcher
+	Scope      RequestScope
+	OnInit     func() error
+	Dispatcher Dispatcher
 }
 
 func NewTransport(name string) *TransportImpl {

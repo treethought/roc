@@ -3,8 +3,6 @@ package roc
 import (
 	"fmt"
 	"os"
-
-	"github.com/hashicorp/go-hclog"
 )
 
 const EndpointTypeAccessor string = "accessor"
@@ -14,36 +12,35 @@ const EndpointTypeAccessor string = "accessor"
 type Accessor struct {
 	BaseEndpoint
 	// grammar Grammar `yaml:"grammar,omitempty"`
-	Logger hclog.Logger
+	Name string
+	// Logger hclog.Logger
 }
 
 func NewAccessor(name string) *Accessor {
 	return &Accessor{
 		Name: name,
-		Logger: hclog.New(&hclog.LoggerOptions{
-			Level:       hclog.Debug,
-			Output:      os.Stderr,
-			JSONFormat:  false,
-			Name:        name,
-			Color:       hclog.ForceColor,
-			DisableTime: true,
-		}),
+		// Logger: hclog.New(&hclog.LoggerOptions{
+		// 	Level:       hclog.Debug,
+		// 	Output:      os.Stderr,
+		// 	JSONFormat:  false,
+		// 	Name:        name,
+		// 	Color:       hclog.ForceColor,
+		// 	DisableTime: true,
+		// }),
 	}
 }
 
 func (a *Accessor) Identifier() Identifier {
 	path, err := os.Executable()
 	if err != nil {
-		a.Logger.Error("unable to locate identifier", "error", err)
+		log.Error("unable to locate identifier", "error", err)
 		return ""
 	}
 
 	return Identifier(fmt.Sprintf("accessor://%s", path))
 }
 
-func (a *Accessor) SetLogger(l hclog.Logger) {
-	a.Logger = l
-}
+
 
 func (e Accessor) Type() string {
 	return EndpointTypeAccessor
@@ -52,4 +49,3 @@ func (e Accessor) Type() string {
 func (e Accessor) String() string {
 	return fmt.Sprintf("endpoint://%s", e.Name)
 }
-

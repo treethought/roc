@@ -13,7 +13,7 @@ import (
 func Serve(e Endpoint) {
 	a, ok := e.(Accessor)
 	if ok {
-		a.Logger.Debug("starting accessor",
+		log.Debug("starting accessor",
 			"name", a.Name,
 			"identifier", a.Identifier(),
 		)

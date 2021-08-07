@@ -16,11 +16,18 @@ spaces:
         - name: nameArg
           regex: ".*"
 
-  - name: testfile
-    type: accessor
-    cmd: ./bin/fileset
+  - name: myfiles
+    type: fileset
     grammar:
-      base: res://file/
+      base: "res://std/"
+      groups:
+        - name: path
+          regex: ".*"
+
+  - name: example-files
+    type: fileset
+    grammar:
+      base: "res://examples/"
       groups:
         - name: path
           regex: ".*"

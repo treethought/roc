@@ -94,6 +94,9 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	case EndpointTypeAccessor:
 		endpoint = NewPhysicalEndpoint(ed.Cmd)
 
+	case EndpointTypeFileset:
+		endpoint = NewFilesetRegex(ed.Regex)
+
 	default:
 		log.Error("Unknown endpoint type", "endpoint", ed)
 		return nil, fmt.Errorf("unknown endpoint type")
@@ -103,7 +106,6 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	if ok {
 		defer phys.Client.Kill()
 	}
-
 
 	log.Info("evaluating request",
 		"identifier", ctx.Request.Identifier,

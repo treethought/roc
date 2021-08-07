@@ -12,7 +12,6 @@ clean:
 build:
 	go build -o ./bin/greeter ./examples/greeter
 	go build -o ./bin/namer ./examples/namer
-	go build -o ./bin/fileset ./examples/fileset
 	go build -o ./bin/std/ ./std/...
 
 protos:

@@ -24,6 +24,9 @@ type EndpointDefinition struct {
 	Cmd          string         `json:"cmd,omitempty" yaml:"cmd,omitempty"`
 	EndpointType string         `json:"type,omitempty" yaml:"type,omitempty"`
 	Literal      Representation `json:"literal,omitempty" yaml:"literal,omitempty"`
+
+	// TODO generalize endpoint def for any endpoint/prototype
+	Regex string
 }
 
 func (ed EndpointDefinition) Type() string {
@@ -96,4 +99,3 @@ func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 		}
 	}
 }
-

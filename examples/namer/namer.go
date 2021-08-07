@@ -32,9 +32,10 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
 	for _, nameRef := range names {
 		resp, err := ctx.Source(roc.Identifier(nameRef), nil)
 		if err != nil {
+			log.Error("failed to source argument ref")
 			return "oh no"
 		}
-        response = fmt.Sprintf("%s %s", response, resp)
+		response = fmt.Sprintf("%s %s", response, resp)
 	}
 
 	return response

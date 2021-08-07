@@ -11,6 +11,7 @@ import (
 var log = hclog.New(&hclog.LoggerOptions{
 	DisableTime: true,
 	Level:       hclog.Debug,
+	Color:       hclog.AutoColor,
 })
 
 type SpaceDefinition struct {
@@ -18,11 +19,11 @@ type SpaceDefinition struct {
 }
 
 type EndpointDefinition struct {
-	Name         string  `json:"name,omitempty" yaml:"name,omitempty"`
-	Grammar      Grammar `json:"grammar,omitempty" yaml:"grammar,omitempty"`
-	Cmd          string  `json:"cmd,omitempty" yaml:"cmd,omitempty"`
-	EndpointType string
-	Literal      Representation
+	Name         string         `json:"name,omitempty" yaml:"name,omitempty"`
+	Grammar      Grammar        `json:"grammar,omitempty" yaml:"grammar,omitempty"`
+	Cmd          string         `json:"cmd,omitempty" yaml:"cmd,omitempty"`
+	EndpointType string         `json:"type,omitempty" yaml:"type,omitempty"`
+	Literal      Representation `json:"literal,omitempty" yaml:"literal,omitempty"`
 }
 
 func (ed EndpointDefinition) Type() string {
@@ -38,8 +39,6 @@ type Space struct {
 	// use identifier instead of string, should reference
 	// plugin binaries as a res:// or file://
 	EndpointDefinitions []EndpointDefinition `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
-	channel             chan (*Request)
-	logger              hclog.Logger
 }
 
 func NewSpace(identifier Identifier, endpoints ...EndpointDefinition) Space {
@@ -47,7 +46,6 @@ func NewSpace(identifier Identifier, endpoints ...EndpointDefinition) Space {
 		Identifier:          identifier,
 		Imports:             []Space{},
 		EndpointDefinitions: endpoints,
-		channel:             make(chan *Request),
 	}
 
 	log.Debug("created space", "identifier", s.Identifier, "endpoints", len(s.EndpointDefinitions))

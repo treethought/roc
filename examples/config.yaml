@@ -2,11 +2,13 @@ spaces:
 - identifier: space://myspace
   endpoints:
   - name: greeter
+    type: accessor
     grammar:
       base: res://hello
     cmd: ./bin/greeter
 
   - name: namer
+    type: accessor
     cmd: ./bin/namer
     grammar:
       base: res://name/
@@ -15,6 +17,7 @@ spaces:
           regex: ".*"
 
   - name: testfile
+    type: accessor
     cmd: ./bin/fileset
     grammar:
       base: res://file/

@@ -60,6 +60,7 @@ func newProtoSpace(space Space) *proto.Space {
 			Grammar:      newProtoGrammar(ed.Grammar),
 			EndpointType: ed.EndpointType,
 			Literal:      &proto.Representation{Value: fmt.Sprint(ed.Literal)},
+			Space:        newProtoSpace(ed.Space),
 		})
 	}
 	for _, s := range space.Imports {
@@ -78,6 +79,7 @@ func protoToSpace(p *proto.Space) Space {
 			Grammar:      protoToGrammar(ed.Grammar),
 			EndpointType: ed.EndpointType,
 			Literal:      ed.Literal.Value,
+			Space:        protoToSpace(ed.Space),
 		})
 	}
 
@@ -139,17 +141,6 @@ func protoToContext(p *proto.RequestContext) *RequestContext {
 
 	return ctx
 
-}
-
-func (m *EndpointGRPC) Evaluate(ctx *RequestContext) Representation {
-	protoCtx := newProtoContext(ctx)
-
-	resp, err := m.client.Evaluate(context.Background(), protoCtx)
-	if err != nil {
-		panic(err)
-	}
-
-	return resp.Value
 }
 
 func (m *EndpointGRPC) Source(ctx *RequestContext) Representation {
@@ -219,40 +210,10 @@ type EndpointGRPCServer struct {
 	broker *plugin.GRPCBroker
 }
 
-// func (m *EndpointGRPCServer) setDispatchClient(ctx *RequestContext, brokerID uint32) (conn *grpc.ClientConn, err error) {
-// 	log.Debug("setting dispatch client to handle grpc server request", "brokerID", brokerID)
-// 	conn, err = m.broker.Dial(brokerID)
-// 	if err != nil {
-// 		log.Error("failed to create dispatcher client conn", "error", err)
-// 		return nil, err
-// 	}
-//     // defer conn.Close()
-
-// 	d := &DispatcherGRPC{
-// 		// TODO: dont use same broker?
-// 		// broker: &plugin.GRPCBroker{},
-// 		client: proto.NewDispatcherClient(conn),
-// 	}
-// 	ctx.Dispatcher = d
-// 	log.Debug("set context dispatcher", "dispatcher", ctx.Dispatcher)
-// 	return conn, nil
-
-// }
-
-func (m *EndpointGRPCServer) Evaluate(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-
-	rocCtx := protoToContext(req)
-	rep := m.Impl.Evaluate(rocCtx)
-
-	return &proto.Representation{Value: fmt.Sprint(rep)}, nil
-}
-
 func (m *EndpointGRPCServer) Source(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
 	log.Debug("begining endpoint grpc source server implementation")
 
 	rocCtx := protoToContext(req)
-	// _, err := m.setDispatchClient(rocCtx, req.DispatcherServer)
-	// defer conn.Close()
 
 	rep := m.Impl.Source(rocCtx)
 

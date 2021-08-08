@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 )
 
@@ -15,6 +16,34 @@ type PhysicalEndpoint struct {
 	path   string
 }
 
+func Serve(e Endpoint) {
+	a, ok := e.(Accessor)
+	if ok {
+		log.Debug("starting accessor",
+			"name", a.Name,
+			"identifier", a.Identifier(),
+		)
+	}
+
+	// pluginMap is the map of plugins we can dispense.
+	var pluginMap = map[string]plugin.Plugin{
+		"endpoint": &EndpointPlugin{Impl: e},
+	}
+
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: Handshake,
+		Plugins:         pluginMap,
+		GRPCServer:      plugin.DefaultGRPCServer,
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Name:        "phys-server",
+			Level:       LogLevel,
+			Color:       hclog.AutoColor,
+			DisableTime: true,
+		}),
+	})
+
+}
+
 // NewPhysicalEndpoint starts a physical process and returns an RPC implementation
 func NewPhysicalEndpoint(path string) Endpoint {
 	// We're a host! Start by launching the plugin pss.
@@ -24,9 +53,14 @@ func NewPhysicalEndpoint(path string) Endpoint {
 		Plugins:         PluginMap,
 		Cmd:             exec.Command(path),
 		Managed:         true,
-		// Logger:          logger,
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Name:        "phys-client",
+			Level:       LogLevel,
+			Color:       hclog.AutoColor,
+			DisableTime: true,
+		}),
 	})
 
 	// Connect via RPC
@@ -77,7 +111,12 @@ func NewPhysicalTransport(path string) Transport {
 		Managed:         true,
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolGRPC},
-		// Logger:          logger,
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Name:        "transport-client",
+			Level:       LogLevel,
+			Color:       hclog.AutoColor,
+			DisableTime: true,
+		}),
 	})
 
 	// Connect via RPC

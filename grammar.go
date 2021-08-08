@@ -72,11 +72,13 @@ func (g Grammar) Match(i Identifier) bool {
 		return false
 	}
 
+	log.Debug("checking scheme", "uri_scheme", uri.Scheme, "grammar_scheme", g.uri.Scheme)
 	if uri.Scheme != g.uri.Scheme {
 		log.Debug("scheme does not match")
 		return false
 	}
 
+	log.Debug("checking host", "uri_host", uri.Host, "grammar_host", g.uri.Host)
 	if uri.Host != g.uri.Host {
 		log.Debug("host does not match")
 		return false
@@ -94,7 +96,7 @@ func (g Grammar) Match(i Identifier) bool {
 	// 	log.Debug("path does not match")
 	// 	return false
 	// }
-	log.Info("grammar matches",
+	log.Debug("grammar matches",
 		"grammar", g.uri.String(),
 		"identifier", i,
 	)
@@ -116,7 +118,6 @@ type GroupElement struct {
 }
 
 func (e GroupElement) Match(g Grammar, i Identifier) bool {
-	log.Error("MATCHING GROUP")
 	log.Debug("performing match grammar group element")
 	part := strings.Replace(i.String(), g.Base, "", 1)
 	if e.Regex != "" {
@@ -126,6 +127,7 @@ func (e GroupElement) Match(g Grammar, i Identifier) bool {
 			return false
 		}
 		if rx.MatchString(part) {
+			log.Debug("grammar group regex match", "regex", e.Regex, "identifier", i)
 			return true
 		}
 	}

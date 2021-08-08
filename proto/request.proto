@@ -40,6 +40,7 @@ message EndpointDefinition {
 	string cmd = 3;
 	string endpoint_type = 4;
 	Representation literal = 5;
+	Space space = 6;
 }
 
 message Space {
@@ -91,7 +92,6 @@ service Dispatcher {
 
 
 service Endpoint {
-	rpc Evaluate(RequestContext) returns (Representation);
 	rpc Source(RequestContext) returns (Representation);
 	rpc Sink(RequestContext) returns (Empty);
 	rpc New(RequestContext) returns (IdentifierResponse);
@@ -102,7 +102,7 @@ service Endpoint {
 
 service Transport {
 	rpc Init(InitTransport) returns (Empty);
-	rpc Evaluate(RequestContext) returns (Representation);
+	/* rpc Evaluate(RequestContext) returns (Representation); */
 	rpc Source(RequestContext) returns (Representation);
 	rpc Sink(RequestContext) returns (Empty);
 	rpc New(RequestContext) returns (IdentifierResponse);

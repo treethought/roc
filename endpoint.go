@@ -10,28 +10,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func Serve(e Endpoint) {
-	a, ok := e.(Accessor)
-	if ok {
-		log.Debug("starting accessor",
-			"name", a.Name,
-			"identifier", a.Identifier(),
-		)
-	}
-
-	// pluginMap is the map of plugins we can dispense.
-	var pluginMap = map[string]plugin.Plugin{
-		"endpoint": &EndpointPlugin{Impl: e},
-	}
-
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: Handshake,
-		Plugins:         pluginMap,
-		GRPCServer:      plugin.DefaultGRPCServer,
-	})
-
-}
-
 // Endpoint represents the gateway between a logical resource and the computation
 type Endpoint interface {
 	Resource
@@ -39,36 +17,27 @@ type Endpoint interface {
 	// Grammer returns the defined set of identifiers that bind an endpoint to a Space
 	// Grammar() Grammar
 
-	// Evaluate processes a request to create or return a Representation of the requested resource
-	Evaluate(ctx *RequestContext) Representation
-
 	// Type() string
 	// Meta(ctx RequestContextArgument) map[string][]string
 }
 
-type BaseEndpoint struct{}
-
-func (e BaseEndpoint) Source(ctx *RequestContext) Representation {
-	return nil
+// Evaluator can be implemented by an endpoint to overide the default request evaluation switch
+type Evaluator interface {
+	// Evaluate processes a request to create or return a Representation of the requested resource
+	Evaluate(ctx *RequestContext) Representation
 }
 
-func (e BaseEndpoint) Sink(ctx *RequestContext) {}
+func Evaluate(ctx *RequestContext, e Endpoint) Representation {
 
-func (e BaseEndpoint) New(ctx *RequestContext) Identifier {
-	return ""
-}
-func (e BaseEndpoint) Delete(ctx *RequestContext) bool {
-	return false
-}
-func (e BaseEndpoint) Exists(ctx *RequestContext) bool {
-	return false
-}
-func (e BaseEndpoint) Transrept(ctx *RequestContext) Representation {
-	return nil
-}
+	// defer to endpoint's custom implementation if defined
+	defined, ok := e.(Evaluator)
+	if ok {
+		return defined.Evaluate(ctx)
+	}
 
-func (e BaseEndpoint) Evaluate(ctx *RequestContext) Representation {
+	log.Debug("using default evaluate handler")
 
+	// use default verb routing
 	switch ctx.Request.Verb {
 	case Source:
 		return e.Source(ctx)
@@ -86,6 +55,29 @@ func (e BaseEndpoint) Evaluate(ctx *RequestContext) Representation {
 		return e.Source(ctx)
 
 	}
+
+}
+
+type BaseEndpoint struct{}
+
+func (e BaseEndpoint) Source(ctx *RequestContext) Representation {
+	log.Info("using default source handler")
+	return nil
+}
+
+func (e BaseEndpoint) Sink(ctx *RequestContext) {}
+
+func (e BaseEndpoint) New(ctx *RequestContext) Identifier {
+	return ""
+}
+func (e BaseEndpoint) Delete(ctx *RequestContext) bool {
+	return false
+}
+func (e BaseEndpoint) Exists(ctx *RequestContext) bool {
+	return false
+}
+func (e BaseEndpoint) Transrept(ctx *RequestContext) Representation {
+	return nil
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this

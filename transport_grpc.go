@@ -43,7 +43,6 @@ type TransportGRPCServer struct {
 }
 
 func (m *TransportGRPCServer) Init(ctx context.Context, req *proto.InitTransport) (*proto.Empty, error) {
-	log.Debug("peforming transport init in grpc server")
 	msg := &InitTransport{}
 	for _, s := range req.Scope.Spaces {
 		msg.Scope.Spaces = append(msg.Scope.Spaces, protoToSpace(s))
@@ -53,9 +52,9 @@ func (m *TransportGRPCServer) Init(ctx context.Context, req *proto.InitTransport
 	return &proto.Empty{}, err
 }
 
-func (m *TransportGRPCServer) Evaluate(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-	return m.EndpointGRPCServer.Evaluate(ctx, req)
-}
+// func (m *TransportGRPCServer) Evaluate(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
+// 	return m.EndpointGRPCServer.Evaluate(ctx, req)
+// }
 
 func (m *TransportGRPCServer) Source(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
 	return m.EndpointGRPCServer.Source(ctx, req)

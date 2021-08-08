@@ -10,7 +10,7 @@ import (
 
 var log = hclog.New(&hclog.LoggerOptions{
 	DisableTime: true,
-	Level:       hclog.Debug,
+	Level:       LogLevel,
 	Color:       hclog.AutoColor,
 })
 
@@ -26,7 +26,9 @@ type EndpointDefinition struct {
 	Literal      Representation `json:"literal,omitempty" yaml:"literal,omitempty"`
 
 	// TODO generalize endpoint def for any endpoint/prototype
-	Regex string
+	Regex string `json:"regex,omitempty" yaml:"regex,omitempty"`
+	// overlay wrapped space
+	Space Space `json:"space,omitempty" yaml:"space,omitempty"`
 }
 
 func (ed EndpointDefinition) Type() string {
@@ -78,6 +80,7 @@ func LoadSpaces(path string) ([]Space, error) {
 
 func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
 	log.Debug("checking grammar", "grammar", e.Grammar.String(), "identifier", ctx.Request.Identifier)
+	log.Trace(fmt.Sprintf("%+v", e))
 	resolve := e.Grammar.Match(ctx.Request.Identifier)
 	return resolve
 
@@ -85,7 +88,7 @@ func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
 
 func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 	for _, ed := range s.EndpointDefinitions {
-		log.Info("interrogating endpoint",
+		log.Debug("interrogating endpoint",
 			"space", s.Identifier,
 			"endpoint", ed.Name,
 		)
@@ -93,7 +96,7 @@ func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 		// e := NewPhysicalEndpoint(ed.Cmd)
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
-			log.Info("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
+			log.Debug("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
 			c <- ed
 			close(c)
 		}

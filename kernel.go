@@ -23,7 +23,7 @@ func NewKernel() *Kernel {
 		receiver:   make(chan *RequestContext),
 		Dispatcher: NewCoreDispatcher(),
 		logger: hclog.New(&hclog.LoggerOptions{
-			Level:       hclog.Info,
+			Level:       LogLevel,
 			Output:      os.Stderr,
 			JSONFormat:  false,
 			Name:        "kernel",

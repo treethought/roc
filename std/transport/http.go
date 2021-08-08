@@ -8,9 +8,7 @@ import (
 	"github.com/treethought/roc"
 )
 
-var log = hclog.New(&hclog.LoggerOptions{
-	DisableTime: true,
-})
+var log = hclog.Default()
 
 type HttpTransport struct {
 	*roc.TransportImpl

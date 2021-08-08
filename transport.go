@@ -3,6 +3,7 @@ package roc
 import (
 	"net/rpc"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treethought/roc/proto"
 	"golang.org/x/net/context"
@@ -45,7 +46,8 @@ func NewTransport(name string) *TransportImpl {
 func (t *TransportImpl) Init(msg *InitTransport) error {
 	log.Debug("initializing transport scope")
 	t.Scope = msg.Scope
-	log.Info("transporter has been initialized", "scope", t.Scope, "dispatcher", t.Dispatcher)
+	log.Info("transporter has been initialized")
+	log.Trace("transporter scope", "scope", t.Scope)
 	return t.OnInit()
 }
 
@@ -55,13 +57,13 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 		t.Dispatcher = &CoreDispatcher{}
 	}
 	for _, s := range t.Scope.Spaces {
-		log.Debug("adding to scope", "space", s.Identifier)
-		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
+		ctx.InjectSpace(s)
 	}
 
 	ctx.Scope = t.Scope
 
-	log.Info("dispatching request from transport",
+	log.Debug("dispatching request from transport",
+		"identifier", ctx.Request.Identifier,
 		"num_spaces", len(ctx.Scope.Spaces),
 	)
 
@@ -112,6 +114,12 @@ func ServeTransport(e Transport) {
 		HandshakeConfig: Handshake,
 		Plugins:         pluginMap,
 		GRPCServer:      plugin.DefaultGRPCServer,
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Name:        "transport-server",
+			Level:       LogLevel,
+			Color:       hclog.AutoColor,
+			DisableTime: true,
+		}),
 	})
 
 }

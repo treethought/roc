@@ -1,33 +1,52 @@
 spaces:
 - identifier: space://myspace
   endpoints:
-  - name: greeter
-    type: accessor
-    grammar:
-      base: res://hello
-    cmd: ./bin/greeter
 
-  - name: namer
-    type: accessor
-    cmd: ./bin/namer
+  - name: exposed
+    type: transient
+    literal: "IM EXPOSED"
     grammar:
-      base: res://name/
-      groups:
-        - name: nameArg
-          regex: ".*"
+      base: "res://exposed"
 
-  - name: myfiles
-    type: fileset
-    grammar:
-      base: "res://std/"
-      groups:
-        - name: path
-          regex: ".*"
 
-  - name: example-files
-    type: fileset
+  - name: overlaytest
+    type: transparentOverlay
     grammar:
-      base: "res://examples/"
+      base: "res://app"
+      # TODO abstract this away
       groups:
-        - name: path
+        - name: uri
           regex: ".*"
+    space:
+      identifier: space://my-wrapped
+      endpoints:
+        - name: namer
+          type: accessor
+          cmd: ./bin/namer
+          grammar:
+            base: res://name/
+            groups:
+              - name: nameArg
+                regex: ".*"
+
+        - name: myfiles
+          type: fileset
+          grammar:
+            base: "res://std/"
+            groups:
+              - name: path
+                regex: ".*"
+
+        - name: example-files
+          type: fileset
+          grammar:
+            base: "res://examples/"
+            groups:
+              - name: path
+                regex: ".*"
+
+        - name: greeter
+          type: accessor
+          grammar:
+            base: res://hello
+          cmd: ./bin/greeter

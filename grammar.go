@@ -72,11 +72,13 @@ func (g Grammar) Match(i Identifier) bool {
 		return false
 	}
 
+	log.Debug("checking scheme", "uri_scheme", uri.Scheme, "grammar_scheme", g.uri.Scheme)
 	if uri.Scheme != g.uri.Scheme {
 		log.Debug("scheme does not match")
 		return false
 	}
 
+	log.Debug("checking host", "uri_host", uri.Host, "grammar_host", g.uri.Host)
 	if uri.Host != g.uri.Host {
 		log.Debug("host does not match")
 		return false

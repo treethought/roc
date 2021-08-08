@@ -97,6 +97,10 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	case EndpointTypeFileset:
 		endpoint = NewFilesetRegex(ed.Regex)
 
+	case EndpointTypeTransparentOverlay:
+		overlay := NewTransparentOverlay(ed)
+		log.Info("resolved to transparent overlay")
+		endpoint = overlay
 	default:
 		log.Error("Unknown endpoint type", "endpoint", ed)
 		return nil, fmt.Errorf("unknown endpoint type")
@@ -115,7 +119,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	// TODO route verbs to methods
 	// rep := endpoint.Source(ctx)
-	log.Debug("returning response from dispatcher",
+	log.Warn("dispatch received response",
 		"identifier", ctx.Request.Identifier,
 		"representation", rep,
 	)

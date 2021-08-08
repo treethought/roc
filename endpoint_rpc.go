@@ -26,22 +26,6 @@ func (e *EndpointRPC) CanResolve(ctx *RequestContext) bool {
 	return resp
 }
 
-// Grammer returns the defined set of identifiers that bind an endpoint to a Space
-// Grammar() Grammar
-// Evaluate psses a request to create or return a Representation of the requested resource
-func (e *EndpointRPC) Evaluate(ctx *RequestContext) Representation {
-	// ctx.Dispatcher = NewPhysicalDispatcher()
-	var resp Representation
-	err := e.client.Call("Plugin.Evaluate", ctx, &resp)
-	if err != nil {
-		// You usually want your interfaces to return errors. If they don't,
-		// there isn't much other choice here.
-		panic(err)
-	}
-
-	return resp
-}
-
 // Source retrieves representation of resource
 func (e *EndpointRPC) Source(ctx *RequestContext) Representation {
 	// ctx.Dispatcher = NewPhysicalDispatcher()
@@ -118,11 +102,6 @@ func (e *EndpointRPC) Exists(ctx *RequestContext) bool {
 type EndpointRPCServer struct {
 	// This is the real implementation
 	Impl Endpoint
-}
-
-func (s *EndpointRPCServer) Evaluate(ctx *RequestContext, resp *Representation) error {
-	*resp = s.Impl.Evaluate(ctx)
-	return nil
 }
 
 func (s *EndpointRPCServer) Source(ctx *RequestContext, resp *Representation) error {

@@ -53,9 +53,9 @@ func (m *TransportGRPCServer) Init(ctx context.Context, req *proto.InitTransport
 	return &proto.Empty{}, err
 }
 
-func (m *TransportGRPCServer) Evaluate(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-	return m.EndpointGRPCServer.Evaluate(ctx, req)
-}
+// func (m *TransportGRPCServer) Evaluate(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
+// 	return m.EndpointGRPCServer.Evaluate(ctx, req)
+// }
 
 func (m *TransportGRPCServer) Source(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
 	return m.EndpointGRPCServer.Source(ctx, req)

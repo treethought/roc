@@ -43,7 +43,7 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 
 		// TODO better way?
 		for _, val := range v {
-			log.Info("creating transient endpoint", "arg", k, "val", val)
+			log.Info("creating transient argument endpoint", "arg", k, "val", val)
 			endpoint := NewTransientEndpoint(val)
 			transientDefs = append(transientDefs, endpoint.Definition())
 
@@ -74,14 +74,14 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 }
 
 func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
-	log.Warn("receivied disptach call",
+	log.Warn("dispatching request",
 		"identifier", ctx.Request.Identifier,
 		"scope_size", len(ctx.Scope.Spaces),
 		"verb", ctx.Request.Verb,
 	)
 
 	ed := d.resolveEndpoint(ctx)
-	log.Info("resolve to endpoint", "endpoint", ed.Name, "type", ed.Type())
+	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type())
 
 	injectArguments(ctx, ed)
 
@@ -111,7 +111,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		"identifier", ctx.Request.Identifier,
 		"verb", ctx.Request.Verb,
 	)
-	rep := endpoint.Source(ctx)
+	rep := Evaluate(ctx, endpoint)
 
 	// TODO route verbs to methods
 	// rep := endpoint.Source(ctx)

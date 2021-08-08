@@ -17,16 +17,52 @@ type Endpoint interface {
 	// Grammer returns the defined set of identifiers that bind an endpoint to a Space
 	// Grammar() Grammar
 
-	// Evaluate processes a request to create or return a Representation of the requested resource
-	Evaluate(ctx *RequestContext) Representation
-
 	// Type() string
 	// Meta(ctx RequestContextArgument) map[string][]string
+}
+
+// Evaluator can be implemented by an endpoint to overide the default request evaluation switch
+type Evaluator interface {
+	// Evaluate processes a request to create or return a Representation of the requested resource
+	Evaluate(ctx *RequestContext) Representation
+}
+
+func Evaluate(ctx *RequestContext, e Endpoint) Representation {
+
+	// defer to endpoint's custom implementation if defined
+	defined, ok := e.(Evaluator)
+	if ok {
+		return defined.Evaluate(ctx)
+	}
+
+	log.Warn("using default evaluate handler")
+
+	// use default verb routing
+	switch ctx.Request.Verb {
+	case Source:
+		log.Warn("CALLING IMPL SOURCE")
+		return e.Source(ctx)
+	case Sink:
+		e.Sink(ctx)
+		return nil
+	case New:
+		return e.New(ctx)
+	case Delete:
+		return e.Delete(ctx)
+	case Exists:
+		return e.Exists(ctx)
+
+	default:
+		return e.Source(ctx)
+
+	}
+
 }
 
 type BaseEndpoint struct{}
 
 func (e BaseEndpoint) Source(ctx *RequestContext) Representation {
+	log.Info("using default source handler")
 	return nil
 }
 
@@ -43,27 +79,6 @@ func (e BaseEndpoint) Exists(ctx *RequestContext) bool {
 }
 func (e BaseEndpoint) Transrept(ctx *RequestContext) Representation {
 	return nil
-}
-
-func (e BaseEndpoint) Evaluate(ctx *RequestContext) Representation {
-
-	switch ctx.Request.Verb {
-	case Source:
-		return e.Source(ctx)
-	case Sink:
-		e.Sink(ctx)
-		return nil
-	case New:
-		return e.New(ctx)
-	case Delete:
-		return e.Delete(ctx)
-	case Exists:
-		return e.Exists(ctx)
-
-	default:
-		return e.Source(ctx)
-
-	}
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this

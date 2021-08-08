@@ -26,7 +26,9 @@ type EndpointDefinition struct {
 	Literal      Representation `json:"literal,omitempty" yaml:"literal,omitempty"`
 
 	// TODO generalize endpoint def for any endpoint/prototype
-	Regex string
+	Regex string `json:"regex,omitempty" yaml:"regex,omitempty"`
+	// overlay wrapped space
+	Space Space `json:"space,omitempty" yaml:"space,omitempty"`
 }
 
 func (ed EndpointDefinition) Type() string {

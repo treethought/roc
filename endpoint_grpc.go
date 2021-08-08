@@ -60,6 +60,7 @@ func newProtoSpace(space Space) *proto.Space {
 			Grammar:      newProtoGrammar(ed.Grammar),
 			EndpointType: ed.EndpointType,
 			Literal:      &proto.Representation{Value: fmt.Sprint(ed.Literal)},
+			Space:        newProtoSpace(ed.Space),
 		})
 	}
 	for _, s := range space.Imports {
@@ -78,6 +79,7 @@ func protoToSpace(p *proto.Space) Space {
 			Grammar:      protoToGrammar(ed.Grammar),
 			EndpointType: ed.EndpointType,
 			Literal:      ed.Literal.Value,
+			Space:        protoToSpace(ed.Space),
 		})
 	}
 

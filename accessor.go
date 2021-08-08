@@ -17,8 +17,8 @@ type Accessor struct {
 
 func NewAccessor(name string) *Accessor {
 	return &Accessor{
-		Name: name,
-        BaseEndpoint: BaseEndpoint{},
+		Name:         name,
+		BaseEndpoint: BaseEndpoint{},
 	}
 }
 
@@ -31,8 +31,6 @@ func (a *Accessor) Identifier() Identifier {
 
 	return Identifier(fmt.Sprintf("accessor://%s", path))
 }
-
-
 
 func (e Accessor) Type() string {
 	return EndpointTypeAccessor

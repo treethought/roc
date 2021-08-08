@@ -56,8 +56,7 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 		t.Dispatcher = &CoreDispatcher{}
 	}
 	for _, s := range t.Scope.Spaces {
-		log.Debug("adding to scope", "space", s.Identifier)
-		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
+		ctx.InjectSpace(s)
 	}
 
 	ctx.Scope = t.Scope

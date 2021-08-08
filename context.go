@@ -22,6 +22,11 @@ func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
 	return NewRequest(identifier, Source, nil)
 }
 
+func (c *RequestContext) InjectSpace(space Space) {
+	log.Info("injecting space into scope", "space", space.Identifier)
+	c.Scope.Spaces = append(c.Scope.Spaces, space)
+}
+
 func (c *RequestContext) IssueRequest(req *Request) (Representation, error) {
 	log.Info("issuing new request")
 

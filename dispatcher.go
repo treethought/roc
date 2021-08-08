@@ -53,7 +53,7 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 	}
 
 	dynamicSpace := NewSpace(Identifier(spaceID), transientDefs...)
-	ctx.Scope.Spaces = append(ctx.Scope.Spaces, dynamicSpace)
+	ctx.InjectSpace(dynamicSpace)
 	ctx.Request.Arguments = refArgs
 
 	// TODO

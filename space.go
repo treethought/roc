@@ -10,7 +10,7 @@ import (
 
 var log = hclog.New(&hclog.LoggerOptions{
 	DisableTime: true,
-	Level:       hclog.Debug,
+	Level:       LogLevel,
 	Color:       hclog.AutoColor,
 })
 
@@ -85,7 +85,7 @@ func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
 
 func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 	for _, ed := range s.EndpointDefinitions {
-		log.Info("interrogating endpoint",
+		log.Debug("interrogating endpoint",
 			"space", s.Identifier,
 			"endpoint", ed.Name,
 		)
@@ -93,7 +93,7 @@ func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 		// e := NewPhysicalEndpoint(ed.Cmd)
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
-			log.Info("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
+			log.Debug("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
 			c <- ed
 			close(c)
 		}

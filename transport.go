@@ -3,6 +3,7 @@ package roc
 import (
 	"net/rpc"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/treethought/roc/proto"
 	"golang.org/x/net/context"
@@ -112,6 +113,12 @@ func ServeTransport(e Transport) {
 		HandshakeConfig: Handshake,
 		Plugins:         pluginMap,
 		GRPCServer:      plugin.DefaultGRPCServer,
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Name:        "transport-server",
+			Level:       LogLevel,
+			Color:       hclog.AutoColor,
+			DisableTime: true,
+		}),
 	})
 
 }

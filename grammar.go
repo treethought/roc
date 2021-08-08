@@ -116,7 +116,6 @@ type GroupElement struct {
 }
 
 func (e GroupElement) Match(g Grammar, i Identifier) bool {
-	log.Error("MATCHING GROUP")
 	log.Debug("performing match grammar group element")
 	part := strings.Replace(i.String(), g.Base, "", 1)
 	if e.Regex != "" {
@@ -126,6 +125,7 @@ func (e GroupElement) Match(g Grammar, i Identifier) bool {
 			return false
 		}
 		if rx.MatchString(part) {
+			log.Debug("grammar group regex match", "regex", e.Regex, "identifier", i)
 			return true
 		}
 	}

@@ -13,20 +13,12 @@ type Accessor struct {
 	BaseEndpoint
 	// grammar Grammar `yaml:"grammar,omitempty"`
 	Name string
-	// Logger hclog.Logger
 }
 
 func NewAccessor(name string) *Accessor {
 	return &Accessor{
 		Name: name,
-		// Logger: hclog.New(&hclog.LoggerOptions{
-		// 	Level:       hclog.Debug,
-		// 	Output:      os.Stderr,
-		// 	JSONFormat:  false,
-		// 	Name:        name,
-		// 	Color:       hclog.ForceColor,
-		// 	DisableTime: true,
-		// }),
+        BaseEndpoint: BaseEndpoint{},
 	}
 }
 

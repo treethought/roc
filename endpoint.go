@@ -10,28 +10,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func Serve(e Endpoint) {
-	a, ok := e.(Accessor)
-	if ok {
-		log.Debug("starting accessor",
-			"name", a.Name,
-			"identifier", a.Identifier(),
-		)
-	}
-
-	// pluginMap is the map of plugins we can dispense.
-	var pluginMap = map[string]plugin.Plugin{
-		"endpoint": &EndpointPlugin{Impl: e},
-	}
-
-	plugin.Serve(&plugin.ServeConfig{
-		HandshakeConfig: Handshake,
-		Plugins:         pluginMap,
-		GRPCServer:      plugin.DefaultGRPCServer,
-	})
-
-}
-
 // Endpoint represents the gateway between a logical resource and the computation
 type Endpoint interface {
 	Resource

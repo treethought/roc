@@ -21,7 +21,7 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition 
 
 	c := make(chan (EndpointDefinition))
 	for _, s := range ctx.Scope.Spaces {
-		log.Info("checking space: ", "space", s.Identifier)
+		log.Debug("checking space: ", "space", s.Identifier)
 		go s.Resolve(ctx, c)
 	}
 
@@ -43,10 +43,9 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 
 		// TODO better way?
 		for _, val := range v {
+			log.Info("creating transient endpoint", "arg", k, "val", val)
 			endpoint := NewTransientEndpoint(val)
 			transientDefs = append(transientDefs, endpoint.Definition())
-
-			log.Info("creating transient endpoint", "definition", endpoint.Definition())
 
 			refArgs[k] = append(refArgs[k], endpoint.Identifier().String())
 			log.Debug("set argument refernece", "name", k, "ref", endpoint.Identifier().String())
@@ -78,10 +77,11 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Warn("receivied disptach call",
 		"identifier", ctx.Request.Identifier,
 		"scope_size", len(ctx.Scope.Spaces),
+		"verb", ctx.Request.Verb,
 	)
 
 	ed := d.resolveEndpoint(ctx)
-	log.Info("resolved to endpoint", "endpoint", ed, "type", ed.Type())
+	log.Info("resolve to endpoint", "endpoint", ed.Name, "type", ed.Type())
 
 	injectArguments(ctx, ed)
 
@@ -109,6 +109,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	log.Info("evaluating request",
 		"identifier", ctx.Request.Identifier,
+		"verb", ctx.Request.Verb,
 	)
 	rep := endpoint.Source(ctx)
 

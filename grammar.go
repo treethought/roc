@@ -96,7 +96,7 @@ func (g Grammar) Match(i Identifier) bool {
 	// 	log.Debug("path does not match")
 	// 	return false
 	// }
-	log.Info("grammar matches",
+	log.Debug("grammar matches",
 		"grammar", g.uri.String(),
 		"identifier", i,
 	)

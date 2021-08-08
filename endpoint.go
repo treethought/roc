@@ -35,12 +35,11 @@ func Evaluate(ctx *RequestContext, e Endpoint) Representation {
 		return defined.Evaluate(ctx)
 	}
 
-	log.Warn("using default evaluate handler")
+	log.Debug("using default evaluate handler")
 
 	// use default verb routing
 	switch ctx.Request.Verb {
 	case Source:
-		log.Warn("CALLING IMPL SOURCE")
 		return e.Source(ctx)
 	case Sink:
 		e.Sink(ctx)

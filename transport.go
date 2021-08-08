@@ -46,7 +46,8 @@ func NewTransport(name string) *TransportImpl {
 func (t *TransportImpl) Init(msg *InitTransport) error {
 	log.Debug("initializing transport scope")
 	t.Scope = msg.Scope
-	log.Info("transporter has been initialized", "scope", t.Scope, "dispatcher", t.Dispatcher)
+	log.Info("transporter has been initialized")
+	log.Trace("transporter scope", "scope", t.Scope)
 	return t.OnInit()
 }
 
@@ -61,7 +62,8 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	ctx.Scope = t.Scope
 
-	log.Info("dispatching request from transport",
+	log.Debug("dispatching request from transport",
+		"identifier", ctx.Request.Identifier,
 		"num_spaces", len(ctx.Scope.Spaces),
 	)
 

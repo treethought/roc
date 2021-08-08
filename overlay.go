@@ -12,7 +12,6 @@ type Overlay interface {
 
 type TransparentOverlay struct {
 	BaseEndpoint
-	// Grammar    Grammar
 	Space      Space
 	onRequest  func(ctx *RequestContext)
 	onResponse func(ctx *RequestContext, resp Representation)
@@ -23,10 +22,9 @@ func NewTransparentOverlay(ed EndpointDefinition) TransparentOverlay {
 	return TransparentOverlay{
 		BaseEndpoint: BaseEndpoint{},
 		Space:        ed.Space,
-		// Grammar:      grammar,
-		onRequest:  func(ctx *RequestContext) {},
-		onResponse: func(ctx *RequestContext, resp Representation) {},
-		Dispatcher: NewCoreDispatcher(),
+		onRequest:    func(ctx *RequestContext) {},
+		onResponse:   func(ctx *RequestContext, resp Representation) {},
+		Dispatcher:   NewCoreDispatcher(),
 	}
 }
 
@@ -34,17 +32,10 @@ func (e TransparentOverlay) Type() string {
 	return EndpointTypeTransparentOverlay
 }
 
-func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
-	// transparent hook, cannot modify response
-	log.Warn("-------------------------------------")
-	o.onRequest(ctx)
-
-	log.Info("overlay handling request", ctx.Request.Identifier)
-
+func (o TransparentOverlay) sourceURI(ctx *RequestContext) (string, error) {
 	uriRefs, ok := ctx.Request.Arguments["uri"]
 	if !ok {
-		log.Error("no uri argument provided in context")
-		return nil
+		return "", fmt.Errorf("uri argument not in context")
 	}
 
 	refIdentifier := Identifier(uriRefs[0])
@@ -53,6 +44,21 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
 	uri, err := ctx.Source(refIdentifier, nil)
 	if err != nil {
 		log.Error("failed to source uri argument")
+		return "", err
+	}
+	return fmt.Sprint(uri), nil
+}
+
+func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
+	// transparent hook, cannot modify response
+	log.Warn("-------------------------------------")
+
+	o.onRequest(ctx)
+
+	log.Info("overlay handling request", "identifier", ctx.Request.Identifier)
+
+	uri, err := o.sourceURI(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -65,8 +71,6 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
 
 	log.Debug("initial scope", "size", len(ctx.Scope.Spaces))
 
-	wrappedCtx := NewRequestContext(id, ctx.Request.Verb)
-
 	// inject the wrappes space into the request scope
 	// we don't create a new request, because this is transparent.
 	// we just issue requests into our wrapped space which is otherwise
@@ -74,12 +78,14 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
 
 	// we also replace the existing scope completely, to prevent resolving to this overlay in a loop
 	log.Debug("injecting wrapped space", "space", o.Space.Identifier, "size", len(o.Space.EndpointDefinitions))
-	wrappedCtx.Scope.Spaces = []Space{o.Space}
+	ctx.InjectSpace(o.Space)
 
-	log.Debug("new scope", "spaces", len(wrappedCtx.Scope.Spaces), "size", len(wrappedCtx.Scope.Spaces[0].EndpointDefinitions))
+	ctx.Request = NewRequest(id, ctx.Request.Verb, ctx.Request.RepresentationClass)
+
+	log.Debug("new scope", "spaces", len(ctx.Scope.Spaces), "size", len(ctx.Scope.Spaces[0].EndpointDefinitions))
 
 	// forward the request into our wrapped space
-	resp, err := o.Dispatcher.Dispatch(wrappedCtx)
+	resp, err := o.Dispatcher.Dispatch(ctx)
 	if err != nil {
 		panic(err)
 	}

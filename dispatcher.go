@@ -26,6 +26,7 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition 
 	}
 
 	return <-c
+
 }
 
 func injectArguments(ctx *RequestContext, e EndpointDefinition) {
@@ -43,7 +44,7 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 
 		// TODO better way?
 		for _, val := range v {
-			log.Info("creating transient argument endpoint", "arg", k, "val", val)
+			log.Debug("creating transient argument endpoint", "arg", k, "val", val)
 			endpoint := NewTransientEndpoint(val)
 			transientDefs = append(transientDefs, endpoint.Definition())
 
@@ -82,6 +83,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	ed := d.resolveEndpoint(ctx)
 	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type())
+	log.Trace(fmt.Sprintf("%+v", ed))
 
 	injectArguments(ctx, ed)
 
@@ -99,8 +101,8 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	case EndpointTypeTransparentOverlay:
 		overlay := NewTransparentOverlay(ed)
-		log.Info("resolved to transparent overlay")
 		endpoint = overlay
+
 	default:
 		log.Error("Unknown endpoint type", "endpoint", ed)
 		return nil, fmt.Errorf("unknown endpoint type")

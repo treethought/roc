@@ -79,7 +79,6 @@ func LoadSpaces(path string) ([]Space, error) {
 }
 
 func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
-	log.Debug("checking grammar", "grammar", e.Grammar.String(), "identifier", ctx.Request.Identifier)
 	log.Trace(fmt.Sprintf("%+v", e))
 	resolve := e.Grammar.Match(ctx.Request.Identifier)
 	return resolve

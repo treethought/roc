@@ -17,7 +17,7 @@ func NewCoreDispatcher() *CoreDispatcher {
 }
 
 func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition {
-	log.Info("resolving request", "identifier", ctx.Request.Identifier)
+	log.Debug("resolving request", "identifier", ctx.Request.Identifier)
 
 	c := make(chan (EndpointDefinition))
 	for _, s := range ctx.Scope.Spaces {
@@ -29,33 +29,26 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition 
 
 }
 
-func injectArguments(ctx *RequestContext, e EndpointDefinition) {
-	log.Debug("injecting arguments into request context")
-	args := e.Grammar.Parse(ctx.Request.Identifier)
-
+func newTransientSpace(endpoints ...EndpointDefinition) Space {
 	uid := uuid.New()
 	spaceID := fmt.Sprintf("dynamic-space://%s", uid.String())
+	space := NewSpace(Identifier(spaceID), endpoints...)
+	return space
 
-	refArgs := make(map[string][]string)
+}
 
-	transientDefs := []EndpointDefinition{}
+func injectParsedArgs(ctx *RequestContext, e EndpointDefinition) {
+	log.Debug("injecting parsed arguments into request context")
+	args := e.Grammar.Parse(ctx.Request.Identifier)
+
 	for k, v := range args {
-		refArgs[k] = []string{}
-
-		// TODO better way?
-		for _, val := range v {
-			log.Debug("creating transient argument endpoint", "arg", k, "val", val)
-			endpoint := NewTransientEndpoint(val)
-			transientDefs = append(transientDefs, endpoint.Definition())
-
-			refArgs[k] = append(refArgs[k], endpoint.Identifier().String())
-			log.Debug("set argument refernece", "name", k, "ref", endpoint.Identifier().String())
+		// TODO: not overwriting arguments already added to the request
+		// might want to change this
+		_, exists := ctx.Request.argumentValues[k]
+		if !exists {
+			ctx.Request.SetArgumentByValue(k, v[0])
 		}
 	}
-
-	dynamicSpace := NewSpace(Identifier(spaceID), transientDefs...)
-	ctx.InjectSpace(dynamicSpace)
-	ctx.Request.Arguments = refArgs
 
 	// TODO
 
@@ -75,7 +68,7 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 }
 
 func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
-	log.Warn("dispatching request",
+	log.Info("dispatching request",
 		"identifier", ctx.Request.Identifier,
 		"scope_size", len(ctx.Scope.Spaces),
 		"verb", ctx.Request.Verb,
@@ -85,7 +78,9 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type())
 	log.Trace(fmt.Sprintf("%+v", ed))
 
-	injectArguments(ctx, ed)
+	injectParsedArgs(ctx, ed)
+
+	ctx.injectValueSpace(ctx.Request)
 
 	var endpoint Endpoint
 
@@ -113,7 +108,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		defer phys.Client.Kill()
 	}
 
-	log.Info("evaluating request",
+	log.Debug("evaluating request",
 		"identifier", ctx.Request.Identifier,
 		"verb", ctx.Request.Verb,
 	)
@@ -121,7 +116,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	// TODO route verbs to methods
 	// rep := endpoint.Source(ctx)
-	log.Warn("dispatch received response",
+	log.Info("dispatch received response",
 		"identifier", ctx.Request.Identifier,
 		"representation", rep,
 	)

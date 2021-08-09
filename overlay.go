@@ -32,23 +32,6 @@ func (e TransparentOverlay) Type() string {
 	return EndpointTypeTransparentOverlay
 }
 
-func (o TransparentOverlay) sourceURI(ctx *RequestContext) (string, error) {
-	uriRefs, ok := ctx.Request.Arguments["uri"]
-	if !ok {
-		return "", fmt.Errorf("uri argument not in context")
-	}
-
-	refIdentifier := Identifier(uriRefs[0])
-	log.Debug("obtained reference arg", "ref", refIdentifier)
-
-	uri, err := ctx.Source(refIdentifier, nil)
-	if err != nil {
-		log.Error("failed to source uri argument")
-		return "", err
-	}
-	return fmt.Sprint(uri), nil
-}
-
 func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
 	// transparent hook, cannot modify response
 	log.Warn("-------------------------------------")
@@ -57,7 +40,7 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
 
 	log.Info("overlay handling request", "identifier", ctx.Request.Identifier)
 
-	uri, err := o.sourceURI(ctx)
+	uri, err := ctx.GetArgumentValue("uri")
 	if err != nil {
 		return err
 	}
@@ -69,25 +52,20 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
 
 	log.Info("issuing request to wrapped space", "identifier", id)
 
-	log.Debug("initial scope", "size", len(ctx.Scope.Spaces))
-
-	// inject the wrappes space into the request scope
-	// we don't create a new request, because this is transparent.
-	// we just issue requests into our wrapped space which is otherwise
+	// inject the wrapped space into the request scope and
+	// issue request into our wrapped space which is otherwise
 	// unavailable to outside of the overlay
 
-	// we also replace the existing scope completely, to prevent resolving to this overlay in a loop
-	log.Debug("injecting wrapped space", "space", o.Space.Identifier, "size", len(o.Space.EndpointDefinitions))
 	ctx.InjectSpace(o.Space)
 
-	ctx.Request = NewRequest(id, ctx.Request.Verb, ctx.Request.RepresentationClass)
+	req := ctx.CreateRequest(id)
+	req.Verb = ctx.Request.Verb
+	req.SetRepresentationClass(ctx.Request.RepresentationClass)
 
-	log.Debug("new scope", "spaces", len(ctx.Scope.Spaces), "size", len(ctx.Scope.Spaces[0].EndpointDefinitions))
-
-	// forward the request into our wrapped space
-	resp, err := o.Dispatcher.Dispatch(ctx)
+	resp, err := ctx.IssueRequest(ctx.Request)
 	if err != nil {
-		panic(err)
+		log.Error("failed to issue request into wrapped space", "err", err)
+		return err
 	}
 
 	// transparent hook, cannot modify response

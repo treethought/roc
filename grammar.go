@@ -58,7 +58,7 @@ func (g Grammar) Parse(i Identifier) (args map[string][]string) {
 }
 
 func (g Grammar) Match(i Identifier) bool {
-	log.Debug("testing grammar",
+	log.Debug("checking grammar",
 		"grammar", g.String(),
 		"identitifier", i,
 	)

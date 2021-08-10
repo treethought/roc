@@ -82,7 +82,7 @@ func (k *Kernel) Start() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
-	defer transport.Client.Kill()
+	// defer transport.Client.Kill()
 	defer plugin.CleanupClients()
 	<-sig
 

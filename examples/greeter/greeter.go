@@ -21,9 +21,17 @@ func New() *MyEndpoint {
 
 // Source retrieves representation of resource
 func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
-	log.Info("Executing source in greeter", "identifier", ctx.Request.Identifier)
+	log.Error("Executing source in greeter", "identifier", ctx.Request.Identifier)
 
 	log.Warn("Making subrequest", "target", "res://name")
+	log.Warn("sourcing http request")
+
+	httpReq, err := ctx.Source(roc.Identifier("httpRequest://params"), nil)
+	if err != nil {
+		log.Error("failed to get httpRequest://", "err", err)
+		return err
+	}
+	return httpReq
 
 	name, err := ctx.GetArgumentValue("name")
 	if err != nil {
@@ -46,6 +54,7 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
 }
 
 func main() {
+	log.Error("GREETER MAIN")
 	endpoint := New()
 	roc.Serve(endpoint)
 

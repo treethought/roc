@@ -2,6 +2,7 @@ package roc
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/google/uuid"
 )
@@ -98,6 +99,15 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		overlay := NewTransparentOverlay(ed)
 		endpoint = overlay
 
+	case OverlayTypeHTTPBridge:
+		overlay := NewHTTPBridgeOverlay(ed)
+		endpoint = overlay
+
+	case EndpointTypeHTTPRequestAccessor:
+		log.Error("CREATING HTTPREQUEST ACCESSOR")
+		overlay := NewHttpRequestEndpoint(ed)
+		endpoint = overlay
+
 	default:
 		log.Error("Unknown endpoint type", "endpoint", ed)
 		return nil, fmt.Errorf("unknown endpoint type")
@@ -119,6 +129,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Info("dispatch received response",
 		"identifier", ctx.Request.Identifier,
 		"representation", rep,
+		"class", reflect.TypeOf(rep),
 	)
 	return rep, nil
 }

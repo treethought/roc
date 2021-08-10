@@ -80,6 +80,9 @@ func LoadSpaces(path string) ([]Space, error) {
 
 func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
 	log.Trace(fmt.Sprintf("%+v", e))
+	if e.EndpointType == "transport" {
+		return false
+	}
 	resolve := e.Grammar.Match(ctx.Request.Identifier)
 	return resolve
 
@@ -97,7 +100,7 @@ func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 		if canResolve(ctx, ed) {
 			log.Debug("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
 			c <- ed
-			close(c)
+			// close(c)
 		}
 	}
 }

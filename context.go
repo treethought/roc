@@ -1,5 +1,7 @@
 package roc
 
+import "reflect"
+
 type RequestScope struct {
 	Spaces []Space
 }
@@ -25,7 +27,7 @@ func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
 
 // InjectSpace adds the given space to the request scope
 func (c *RequestContext) InjectSpace(space Space) {
-	log.Debug("injecting space into scope", "space", space.Identifier)
+	log.Debug("injecting space into scope", "space", space.Identifier, "size", len(space.EndpointDefinitions))
 	c.Scope.Spaces = append(c.Scope.Spaces, space)
 }
 
@@ -64,7 +66,7 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 	for k, val := range req.argumentValues {
 		// create pbv endpoint to hold representation
 		pbvEndpoint := NewTransientEndpoint(val[0])
-		log.Info("created transient pbv endpoint", "narg", k, "val", val, "identifier", pbvEndpoint.Identifier())
+		log.Info("created transient pbv endpoint", "arg", k, "val", val[0], "identifier", pbvEndpoint.Identifier(), "class", reflect.TypeOf(val[0]))
 
 		// set the argument value to the pbv identifier
 		req.SetArgument(k, pbvEndpoint.Identifier())

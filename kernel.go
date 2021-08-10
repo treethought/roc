@@ -35,9 +35,9 @@ func NewKernel() *Kernel {
 	return k
 }
 
-func (k Kernel) startTransport() (PhysicalTransport, error) {
+func (k Kernel) startTransport(ed EndpointDefinition) (PhysicalTransport, error) {
 	k.logger.Info("creating http transport")
-	httpt := NewPhysicalTransport("./bin/std/transport")
+	httpt := NewPhysicalTransport(ed.Cmd)
 
 	log.Debug("initializing transport scope")
 
@@ -65,10 +65,18 @@ func (k Kernel) startTransport() (PhysicalTransport, error) {
 }
 
 func (k *Kernel) Start() error {
-	transport, err := k.startTransport()
-	if err != nil {
-		log.Error("error starting transport:", "err", err)
-		os.Exit(1)
+	for _, s := range k.Spaces {
+		for _, ed := range s.EndpointDefinitions {
+			if ed.EndpointType == "transport" {
+				client, err := k.startTransport(ed)
+				if err != nil {
+					log.Error("error starting transport:", "err", err)
+					os.Exit(1)
+				}
+				defer client.Client.Kill()
+
+			}
+		}
 	}
 
 	sig := make(chan os.Signal, 1)

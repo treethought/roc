@@ -62,7 +62,7 @@ func (g Grammar) Match(i Identifier) bool {
 		"grammar", g.String(),
 		"identitifier", i,
 	)
-	log.Debug("parsing identitifier")
+	log.Trace("parsing identitifier")
 	uri, err := url.Parse(i.String())
 	if err != nil {
 		log.Error("failed to parse identifier",
@@ -72,13 +72,13 @@ func (g Grammar) Match(i Identifier) bool {
 		return false
 	}
 
-	log.Debug("checking scheme", "uri_scheme", uri.Scheme, "grammar_scheme", g.uri.Scheme)
+	log.Trace("checking scheme", "uri_scheme", uri.Scheme, "grammar_scheme", g.uri.Scheme)
 	if uri.Scheme != g.uri.Scheme {
 		log.Debug("scheme does not match")
 		return false
 	}
 
-	log.Debug("checking host", "uri_host", uri.Host, "grammar_host", g.uri.Host)
+	log.Trace("checking host", "uri_host", uri.Host, "grammar_host", g.uri.Host)
 	if uri.Host != g.uri.Host {
 		log.Debug("host does not match")
 		return false

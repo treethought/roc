@@ -15,13 +15,14 @@ type HttpTransport struct {
 }
 
 func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
-	identifier := roc.Identifier(fmt.Sprintf("res:/%s", req.URL.Path))
-	log.Info("mapped http request to identifier", "identifier", identifier)
+	identifier := roc.Identifier(fmt.Sprintf("http:/%s", req.URL.String()))
+	log.Info("transport received request", "identifier", identifier, "url", req.URL.String())
 
 	// TODO refactor to use roc.Source()?
 
 	ctx := roc.NewRequestContext(identifier, roc.Source)
-	// ctx.Scope = t.Scope
+	ctx.Request.SetArgumentByValue("httpRequest", req)
+	ctx.Request.SetArgumentByValue("httpResponse", w)
 
 	resp, err := t.Dispatch(ctx)
 	if err != nil {

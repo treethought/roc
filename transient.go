@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/treethought/roc/proto"
 )
 
 const EndpointTypeTransient string = "transient"
@@ -16,9 +17,22 @@ type TransientEndpoint struct {
 	Representation Representation
 }
 
-func NewTransientEndpoint(rep Representation) TransientEndpoint {
+func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
+
+	repProto, err := repToProto(NewRepresentation(rep))
+	if err != nil {
+		log.Error("failed to convert transient rep to proto", "err", err)
+	}
+
 	uid := uuid.New()
 	uri := fmt.Sprintf("transient://%s", uid.String())
+
+	any := repProto.GetValue()
+	log.Warn("creating transient endpoint",
+		"any_url", any.TypeUrl,
+		"uri", uri,
+		// "lit_type", ed.Literal.ProtoReflect().Descriptor().Name(),
+	)
 
 	grammar, err := NewGrammar(uri)
 	if err != nil {
@@ -28,21 +42,39 @@ func NewTransientEndpoint(rep Representation) TransientEndpoint {
 	return TransientEndpoint{
 		BaseEndpoint:   BaseEndpoint{},
 		Grammar:        grammar,
-		Representation: rep,
+		Representation: NewRepresentation(rep),
 	}
 }
 
 func (e *TransientEndpoint) Definition() EndpointDefinition {
+	repProto, err := repToProto(e.Representation)
+	if err != nil {
+		log.Error("failed to set transient endpoint definition literal", "err", err)
+		panic(err)
+	}
+
+	any := repProto.GetValue()
+	log.Warn("creating transient definition",
+		"any_url", any.TypeUrl,
+		// "lit_type", ed.Literal.ProtoReflect().Descriptor().Name(),
+	)
+
+	// desc := e.Representation.ProtoReflect().Descriptor()
+	// m := dynamicpb.NewMessage(desc)
+
 	return EndpointDefinition{
-		Name:         e.Grammar.String(),
-		EndpointType: EndpointTypeTransient,
-		Grammar:      e.Grammar,
-		Literal:      e.Representation,
+		EndpointDefinition: &proto.EndpointDefinition{
+			Name:    e.Grammar.String(),
+			Type:    EndpointTypeTransient,
+			Grammar: e.Grammar.m,
+			// TODO: repProto?
+			Literal: repProto,
+		},
 	}
 }
 
 func (e *TransientEndpoint) Identifier() Identifier {
-	return Identifier(e.Grammar.String())
+	return NewIdentifier(e.Grammar.String())
 }
 
 func (e TransientEndpoint) Type() string {

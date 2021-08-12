@@ -38,18 +38,18 @@ func Evaluate(ctx *RequestContext, e Endpoint) Representation {
 	log.Debug("using default evaluate handler")
 
 	// use default verb routing
-	switch ctx.Request.Verb {
-	case Source:
+	switch ctx.Request().m.Verb {
+	case proto.Verb_Source:
 		return e.Source(ctx)
-	case Sink:
+	case proto.Verb_Sink:
 		e.Sink(ctx)
-		return nil
-	case New:
-		return e.New(ctx)
-	case Delete:
-		return e.Delete(ctx)
-	case Exists:
-		return e.Exists(ctx)
+		return NewRepresentation(nil)
+	case proto.Verb_New:
+		return NewRepresentation(e.New(ctx))
+	case proto.Verb_Delete:
+		return NewRepresentation(&proto.BoolResponse{Value: e.Delete(ctx)})
+	case proto.Verb_Exists:
+		return NewRepresentation(&proto.BoolResponse{Value: e.Exists(ctx)})
 
 	default:
 		return e.Source(ctx)
@@ -62,13 +62,13 @@ type BaseEndpoint struct{}
 
 func (e BaseEndpoint) Source(ctx *RequestContext) Representation {
 	log.Info("using default source handler")
-	return nil
+	return NewRepresentation(nil)
 }
 
 func (e BaseEndpoint) Sink(ctx *RequestContext) {}
 
 func (e BaseEndpoint) New(ctx *RequestContext) Identifier {
-	return ""
+	return Identifier{}
 }
 func (e BaseEndpoint) Delete(ctx *RequestContext) bool {
 	return false
@@ -77,7 +77,7 @@ func (e BaseEndpoint) Exists(ctx *RequestContext) bool {
 	return false
 }
 func (e BaseEndpoint) Transrept(ctx *RequestContext) Representation {
-	return nil
+	return NewRepresentation(nil)
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this

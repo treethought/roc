@@ -6,6 +6,8 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/treethought/roc"
+	"github.com/treethought/roc/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var log = hclog.Default()
@@ -14,15 +16,31 @@ type HttpTransport struct {
 	*roc.TransportImpl
 }
 
+func getAsHttpRequest(rep roc.Representation) (*proto.HttpRequest, error) {
+	// TODO: this needs to be handled with response vlass behnd the scenes
+	any, err := anypb.New(rep)
+	if err != nil {
+		return nil, err
+	}
+
+	m := new(proto.HttpRequest)
+	err = any.UnmarshalTo(m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
-	identifier := roc.Identifier(fmt.Sprintf("http:/%s", req.URL.String()))
+	identifier := roc.NewIdentifier(fmt.Sprintf("http:/%s", req.URL.String()))
 	log.Info("transport received request", "identifier", identifier, "url", req.URL.String())
 
 	// TODO refactor to use roc.Source()?
 
-	ctx := roc.NewRequestContext(identifier, roc.Source)
-	ctx.Request.SetArgumentByValue("httpRequest", req)
-	ctx.Request.SetArgumentByValue("httpResponse", w)
+	ctx := roc.NewRequestContext(identifier, proto.Verb_Source)
+	rep := roc.NewRepresentation(roc.NewHttpRequestDefinition(req))
+	ctx.Request().SetArgumentByValue("httpRequest", rep)
+	// ctx.Request.SetArgumentByValue("httpResponse", w)
 
 	resp, err := t.Dispatch(ctx)
 	if err != nil {

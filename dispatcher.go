@@ -2,7 +2,6 @@ package roc
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/google/uuid"
 )
@@ -18,36 +17,44 @@ func NewCoreDispatcher() *CoreDispatcher {
 }
 
 func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition {
-	log.Debug("resolving request", "identifier", ctx.Request.Identifier)
+	log.Debug("resolving request", "identifier", ctx.Request().Identifier().String())
 
 	c := make(chan (EndpointDefinition))
-	for _, s := range ctx.Scope.Spaces {
+	for _, s := range ctx.m.Scope.Spaces {
 		log.Debug("checking space: ", "space", s.Identifier)
-		go s.Resolve(ctx, c)
+		wrap := Space{s}
+		go wrap.Resolve(ctx, c)
 	}
+	ed := <-c
+	close(c)
 
-	return <-c
+	return ed
 
 }
 
 func newTransientSpace(endpoints ...EndpointDefinition) Space {
 	uid := uuid.New()
 	spaceID := fmt.Sprintf("dynamic-space://%s", uid.String())
-	space := NewSpace(Identifier(spaceID), endpoints...)
-	return space
 
+	id := NewIdentifier(spaceID)
+	space := NewSpace(id, endpoints...)
+	return space
 }
+
+// https: //stackoverflow.com/questions/23030884/is-there-a-way-to-create-an-instance-of-a-struct-from-a-string
 
 func injectParsedArgs(ctx *RequestContext, e EndpointDefinition) {
 	log.Debug("injecting parsed arguments into request context")
-	args := e.Grammar.Parse(ctx.Request.Identifier)
+	args := e.grammar().Parse(ctx.Request().Identifier())
 
 	for k, v := range args {
 		// TODO: not overwriting arguments already added to the request
 		// might want to change this
-		_, exists := ctx.Request.argumentValues[k]
+		_, exists := ctx.Request().m.ArgumentValues[k]
 		if !exists {
-			ctx.Request.SetArgumentByValue(k, v[0])
+			log.Warn("setting grammar arg", "arg", k, "val", v[0])
+			rep := NewRepresentation(v[0])
+			ctx.Request().SetArgumentByValue(k, rep)
 		}
 	}
 
@@ -70,22 +77,31 @@ func injectParsedArgs(ctx *RequestContext, e EndpointDefinition) {
 
 func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Info("dispatching request",
-		"identifier", ctx.Request.Identifier,
-		"scope_size", len(ctx.Scope.Spaces),
-		"verb", ctx.Request.Verb,
+		"identifier", ctx.Request().Identifier().String(),
+		"scope_size", len(ctx.m.Scope.Spaces),
+		"verb", ctx.Request().m.Verb,
 	)
 
 	ed := d.resolveEndpoint(ctx)
-	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type())
+	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type)
 	log.Trace(fmt.Sprintf("%+v", ed))
+
+	if ed.Literal != nil {
+		log.Warn("ed literal",
+			"val", ed.Literal,
+			"type_url", ed.Literal.GetValue().TypeUrl,
+			"type", ed.Literal.ProtoReflect().Descriptor().Name(),
+			"id", ctx.Request().Identifier)
+
+	}
 
 	injectParsedArgs(ctx, ed)
 
-	ctx.injectValueSpace(ctx.Request)
+	ctx.injectValueSpace(ctx.Request())
 
 	var endpoint Endpoint
 
-	switch ed.Type() {
+	switch ed.Type {
 	case EndpointTypeTransient:
 		endpoint = NewTransientEndpoint(ed.Literal)
 
@@ -110,7 +126,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	default:
 		log.Error("Unknown endpoint type", "endpoint", ed)
-		return nil, fmt.Errorf("unknown endpoint type")
+		return NewRepresentation(nil), fmt.Errorf("unknown endpoint type")
 	}
 
 	phys, ok := endpoint.(PhysicalEndpoint)
@@ -119,17 +135,17 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	}
 
 	log.Debug("evaluating request",
-		"identifier", ctx.Request.Identifier,
-		"verb", ctx.Request.Verb,
+		"identifier", ctx.Request().Identifier,
+		"verb", ctx.Request().m.Verb,
 	)
 	rep := Evaluate(ctx, endpoint)
 
 	// TODO route verbs to methods
 	// rep := endpoint.Source(ctx)
 	log.Info("dispatch received response",
-		"identifier", ctx.Request.Identifier,
+		"identifier", ctx.Request().Identifier().String(),
 		"representation", rep,
-		"class", reflect.TypeOf(rep),
+		"type_name", rep.ProtoReflect().Descriptor().Name(),
 	)
 	return rep, nil
 }

@@ -26,10 +26,10 @@ func (a *Accessor) Identifier() Identifier {
 	path, err := os.Executable()
 	if err != nil {
 		log.Error("unable to locate identifier", "error", err)
-		return ""
+		return Identifier{}
 	}
 
-	return Identifier(fmt.Sprintf("accessor://%s", path))
+	return NewIdentifier(fmt.Sprintf("accessor://%s", path))
 }
 
 func (e Accessor) Type() string {

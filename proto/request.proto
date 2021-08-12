@@ -3,17 +3,48 @@ package proto;
 
 option go_package = "github.com/treethought/roc/proto";
 
+import "google/protobuf/any.proto";
+import "google/protobuf/struct.proto";
+
+message String {
+	string value = 1;
+}
+
+message ErrorMessage {
+	string message = 1;
+}
+
 enum Verb {
 	UNDEFINED = 0;
-	SOURCE = 1;
-	SINK = 2;
-	NEW = 3;
-	DELELE = 4;
-	EXISTS = 5;
+	// Source retrieves representation of resource
+	Source = 1;
+
+	// Sink updates resource to reflect representation
+	Sink = 2;
+
+	// Exists tests to see if resource can be resolved and exists
+	Exists = 3;
+
+	// Delete remove the resource from the space that currently contains it
+	Delete = 4;
+
+	// New creates a resource and return identifier for created resource
+	// If primary representation is included, use it to initialize resource state
+	New = 5;
+
+	// Transrept converts primary representation into an alternate representation
+	// specified by required representation field in the request
+	Transrept = 6;
+
+	// Resolve performs resolution on the request passed as the primary representation
+	Resolve = 7;
+
+	// Meta retrieves a meta data representation for the identified space or space element
+	Meta = 8;
 }
 
 message Representation {
-	string value = 1;
+	google.protobuf.Any value = 1;
 }
 
 message StringSlice {
@@ -33,20 +64,27 @@ message Grammar {
 	repeated GroupElement groups = 2;
 }
 
-
+/* EndpointDefinition represents the binding of a logical */
+/* endpont to it's physical implementation.*/
+/* The implementation may a command for an accessor or a literal representation */
 message EndpointDefinition {
+	// name is a friendly name of the endpoint
 	string name   = 1; 
 	Grammar grammar = 2;
 	string cmd = 3;
-	string endpoint_type = 4;
+	string type = 4;
 	Representation literal = 5;
+
+	// TODO generalize endpoint def for any endpoint/prototype
+
 	Space space = 6;
+	string  regex = 7;
 }
 
 message Space {
 	string identifier = 1;
 	repeated Space imports = 2;
-	repeated EndpointDefinition endpoint_definitions = 3;
+	repeated EndpointDefinition endpoints = 3 [json_name="endpoints"];
 }
 
 message MapField {
@@ -59,13 +97,16 @@ message Request {
   string identifier = 1;
   Verb verb = 2;
   string representation_class = 3;
-  repeated MapField arguments  = 4;
-  repeated MapField headers  = 5;
+  map<string, StringSlice> arguments = 4;
+  map<string, StringSlice> headers = 5;
+  /* google.protobuf.Struct argument_values = 6; */
+  map<string, Representation> argument_values = 6;
+  /* repeated MapField arguments  = 4; */
+  /* repeated MapField headers  = 5; */
 }
 
 message IdentifierResponse {
 	string value = 1;
-
 }
 
 message BoolResponse {

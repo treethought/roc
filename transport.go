@@ -37,7 +37,7 @@ func NewTransport(name string) *TransportImpl {
 	// this is done inside the transport plugin
 	return &TransportImpl{
 		Accessor:   NewAccessor(name),
-		Scope:      RequestScope{},
+		Scope:      RequestScope{m: &proto.RequestScope{}},
 		OnInit:     func() error { return nil },
 		Dispatcher: NewCoreDispatcher(),
 	}
@@ -45,6 +45,7 @@ func NewTransport(name string) *TransportImpl {
 
 func (t *TransportImpl) Init(msg *InitTransport) error {
 	log.Debug("initializing transport scope")
+	log.Warn("scope", "msg", msg)
 	t.Scope = msg.Scope
 	log.Info("transporter has been initialized")
 	log.Trace("transporter scope", "scope", t.Scope)
@@ -56,15 +57,15 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 		log.Error("transport dispatcher is nil, setting")
 		t.Dispatcher = &CoreDispatcher{}
 	}
-	for _, s := range t.Scope.Spaces {
-		ctx.InjectSpace(s)
+	for _, s := range t.Scope.m.Spaces {
+		ctx.InjectSpace(Space{s})
 	}
 
-	ctx.Scope = t.Scope
+	ctx.m.Scope = t.Scope.m
 
 	log.Debug("dispatching request from transport",
-		"identifier", ctx.Request.Identifier,
-		"num_spaces", len(ctx.Scope.Spaces),
+		"identifier", ctx.Request().Identifier,
+		"num_spaces", len(ctx.m.Scope.Spaces),
 	)
 
 	return t.Dispatcher.Dispatch(ctx)

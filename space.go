@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/treethought/roc/proto"
 	"gopkg.in/yaml.v3"
 )
 
@@ -15,58 +16,59 @@ var log = hclog.New(&hclog.LoggerOptions{
 })
 
 type SpaceDefinition struct {
-	Spaces []Space `json:"spaces" yaml:"spaces"`
-}
-
-type EndpointDefinition struct {
-	Name         string         `json:"name,omitempty" yaml:"name,omitempty"`
-	Grammar      Grammar        `json:"grammar,omitempty" yaml:"grammar,omitempty"`
-	Cmd          string         `json:"cmd,omitempty" yaml:"cmd,omitempty"`
-	EndpointType string         `json:"type,omitempty" yaml:"type,omitempty"`
-	Literal      Representation `json:"literal,omitempty" yaml:"literal,omitempty"`
-
-	// TODO generalize endpoint def for any endpoint/prototype
-	Regex string `json:"regex,omitempty" yaml:"regex,omitempty"`
-	// overlay wrapped space
-	Space Space `json:"space,omitempty" yaml:"space,omitempty"`
-}
-
-func (ed EndpointDefinition) Type() string {
-	if ed.EndpointType != "" {
-		return ed.EndpointType
-	}
-	return EndpointTypeAccessor
+	Spaces []*proto.Space `json:"spaces" yaml:"spaces"`
 }
 
 type Space struct {
-	Identifier Identifier `yaml:"identifier,omitempty" json:"identifier,omitempty"`
-	Imports    []Space    `yaml:"imports,omitempty" json:"imports,omitempty"`
-	// use identifier instead of string, should reference
-	// plugin binaries as a res:// or file://
-	EndpointDefinitions []EndpointDefinition `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
+	m *proto.Space
+}
+
+type EndpointDefinition struct {
+	*proto.EndpointDefinition
+}
+
+// func (ed EndpointDefinition) Type() string {
+// 	return ed.EndpointType
+// }
+
+func (ed *EndpointDefinition) grammar() Grammar {
+	elems := []GroupElement{}
+	for _, g := range ed.Grammar.Groups {
+		elems = append(elems, GroupElement{g})
+	}
+	g, err := NewGrammar(ed.Grammar.Base, elems...)
+	if err != nil {
+		panic(err)
+	}
+	return g
 }
 
 func NewSpace(identifier Identifier, endpoints ...EndpointDefinition) Space {
 	s := Space{
-		Identifier:          identifier,
-		Imports:             []Space{},
-		EndpointDefinitions: endpoints,
+		m: &proto.Space{
+			Identifier: identifier.String(),
+			Imports:    []*proto.Space{},
+		},
+	}
+	for _, e := range endpoints {
+		s.m.Endpoints = append(s.m.Endpoints, e.EndpointDefinition)
 	}
 
-	log.Debug("created space", "identifier", s.Identifier, "endpoints", len(s.EndpointDefinitions))
+	log.Debug("created space", "identifier", s.m.Identifier, "endpoints", len(s.m.Endpoints))
 	return s
 }
 
-func (s *Space) BindEndpoint(e EndpointDefinition) {
-	s.EndpointDefinitions = append(s.EndpointDefinitions, e)
+func (s *Space) BindEndpoint(e *proto.EndpointDefinition) {
+	s.m.Endpoints = append(s.m.Endpoints, e)
 }
 
-func LoadSpaces(path string) ([]Space, error) {
+func LoadSpaces(path string) ([]*proto.Space, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Error("failed to read config file", "error", err)
-		return []Space{}, nil
+		return []*proto.Space{}, nil
 	}
+	// jsonBytes, _ := json.Unmarshal(data)
 
 	def := SpaceDefinition{}
 	err = yaml.Unmarshal(data, &def)
@@ -74,24 +76,31 @@ func LoadSpaces(path string) ([]Space, error) {
 		log.Error("failed to parse space definition", err)
 		return def.Spaces, fmt.Errorf("failed to parse space definitions")
 	}
+
+	out, _ := yaml.Marshal(def)
+	fmt.Println(string(out))
+
 	return def.Spaces, nil
 
 }
 
-func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
+func canResolve(ctx *RequestContext, e *proto.EndpointDefinition) bool {
 	log.Trace(fmt.Sprintf("%+v", e))
-	if e.EndpointType == "transport" {
+	if e.Type == "transport" {
 		return false
 	}
-	resolve := e.Grammar.Match(ctx.Request.Identifier)
+
+	ed := EndpointDefinition{e}
+
+	resolve := ed.grammar().Match(NewIdentifier(ctx.Request().m.Identifier))
 	return resolve
 
 }
 
 func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
-	for _, ed := range s.EndpointDefinitions {
+	for _, ed := range s.m.Endpoints {
 		log.Debug("interrogating endpoint",
-			"space", s.Identifier,
+			"space", s.m.Identifier,
 			"endpoint", ed.Name,
 		)
 		// TODO match grammar in endpoint or in space?
@@ -99,7 +108,7 @@ func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
 			log.Debug("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
-			c <- ed
+			c <- EndpointDefinition{ed}
 			// close(c)
 		}
 	}

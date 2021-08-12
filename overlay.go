@@ -2,6 +2,8 @@ package roc
 
 import (
 	"fmt"
+
+	"github.com/treethought/roc/proto"
 )
 
 var EndpointTypeTransparentOverlay = "transparentOverlay"
@@ -12,7 +14,7 @@ type Overlay interface {
 
 type TransparentOverlay struct {
 	BaseEndpoint
-	Space      Space
+	Space      *proto.Space
 	onRequest  func(ctx *RequestContext)
 	onResponse func(ctx *RequestContext, resp Representation)
 }
@@ -36,33 +38,36 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
 
 	o.onRequest(ctx)
 
-	log.Info("overlay handling request", "identifier", ctx.Request.Identifier)
+	log.Info("overlay handling request", "identifier", ctx.Request().Identifier)
 
 	uri, err := ctx.GetArgumentValue("uri")
 	if err != nil {
-		return err
+		log.Error("failed to source uri argument representation")
+		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
 	}
+
+	log.Warn("OVERLAY GOT URI", "uri", uri)
 
 	// reformat the identifier for context of wrapped space
 	// build new res:// scheme from overlay prefix's root
 	// i.e. res://app/helloworld -> uri=/helloworld -> res://helloworld
-	id := Identifier(fmt.Sprintf("res://%s", uri))
+	id := NewIdentifier(fmt.Sprintf("res://%s", uri))
 
 	// inject the wrapped space into the request scope and
 	// issue request into our wrapped space which is otherwise
 	// unavailable to outside of the overlay
 
-	ctx.InjectSpace(o.Space)
+	ctx.InjectSpace(Space{o.Space})
 
 	req := ctx.CreateRequest(id)
-	req.Verb = ctx.Request.Verb
-	req.SetRepresentationClass(ctx.Request.RepresentationClass)
+	req.m.Verb = ctx.Request().m.Verb
+	req.SetRepresentationClass(ctx.Request().m.RepresentationClass)
 
 	log.Info("issuing request to wrapped space", "identifier", id)
 	resp, err := ctx.IssueRequest(req)
 	if err != nil {
 		log.Error("failed to issue request into wrapped space", "err", err)
-		return err
+		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
 	}
 
 	// transparent hook, cannot modify response

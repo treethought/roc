@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"github.com/treethought/roc/proto"
 )
 
 type Kernel struct {
@@ -35,7 +36,7 @@ func NewKernel() *Kernel {
 	return k
 }
 
-func (k Kernel) startTransport(ed EndpointDefinition) (PhysicalTransport, error) {
+func (k Kernel) startTransport(ed *proto.EndpointDefinition) (PhysicalTransport, error) {
 	k.logger.Info("creating http transport")
 	httpt := NewPhysicalTransport(ed.Cmd)
 
@@ -47,10 +48,10 @@ func (k Kernel) startTransport(ed EndpointDefinition) (PhysicalTransport, error)
 		os.Exit(1)
 	}
 
-	scope := RequestScope{}
+	scope := RequestScope{m: &proto.RequestScope{}}
 	for _, s := range k.Spaces {
-		k.logger.Debug("adding to scope", "space", s.Identifier)
-		scope.Spaces = append(scope.Spaces, s)
+		k.logger.Debug("adding to scope", "space", s.m.Identifier)
+		scope.m.Spaces = append(scope.m.Spaces, s.m)
 	}
 
 	initMsg := &InitTransport{Scope: scope}
@@ -65,9 +66,10 @@ func (k Kernel) startTransport(ed EndpointDefinition) (PhysicalTransport, error)
 }
 
 func (k *Kernel) Start() error {
+	log.Info("starting kernel")
 	for _, s := range k.Spaces {
-		for _, ed := range s.EndpointDefinitions {
-			if ed.EndpointType == "transport" {
+		for _, ed := range s.m.Endpoints {
+			if ed.Type == "transport" {
 				client, err := k.startTransport(ed)
 				if err != nil {
 					log.Error("error starting transport:", "err", err)
@@ -78,6 +80,12 @@ func (k *Kernel) Start() error {
 			}
 		}
 	}
+
+	// transport, err := k.startTransport()
+	// if err != nil {
+	// 	log.Error("error starting transport:", "err", err)
+	// 	os.Exit(1)
+	// }
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
@@ -94,23 +102,25 @@ func (k *Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 		k.Dispatcher = NewCoreDispatcher()
 	}
 	for _, s := range k.Spaces {
-		k.logger.Debug("adding to scope", "space", s.Identifier)
-		ctx.Scope.Spaces = append(ctx.Scope.Spaces, s)
+		k.logger.Debug("adding to scope", "space", s.m.Identifier)
+		ctx.m.Scope.Spaces = append(ctx.m.Scope.Spaces, s.m)
 	}
 
 	k.logger.Info("dispatching request from kernel",
-		"num_spaces", len(ctx.Scope.Spaces),
+		"num_spaces", len(ctx.m.Scope.Spaces),
 	)
 
 	return k.Dispatcher.Dispatch(ctx)
 }
 
-func (k *Kernel) Register(spaces ...Space) {
+func (k *Kernel) Register(spaces ...*proto.Space) {
 	for _, space := range spaces {
 		k.logger.Info("registering space",
-			"space", space.Identifier,
+			"space", space.GetIdentifier(),
 		)
-		k.Spaces[space.Identifier] = space
+		id := NewIdentifier(space.Identifier)
+		k.Spaces[id] = Space{space}
+		k.logger.Info("registered spaces", "size", len(spaces))
 	}
 }
 
@@ -119,6 +129,6 @@ func (k *Kernel) Receiver() chan (*RequestContext) {
 }
 
 func (k Kernel) buildResolveRequestContext(request *Request) *RequestContext {
-	return NewRequestContext(request.Identifier, Resolve)
+	return NewRequestContext(request.Identifier(), proto.Verb_Resolve)
 
 }

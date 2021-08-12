@@ -1,0 +1,57 @@
+spaces:
+- identifier: space://myspace
+  endpoints:
+
+  - name: exposed
+    type: transient
+    # literal:
+    #   value: "IM EXPOSED"
+    #   @type: "github.com/treethought/roc.proto.String"
+    grammar:
+      base: "res://exposed"
+
+
+  - name: overlaytest
+    type: transparentOverlay
+    grammar:
+      base: "res://app"
+      # TODO abstract this away
+      groups:
+        - name: uri
+          regex: ".*"
+    space:
+      identifier: space://my-wrapped
+      endpoints:
+        - name: namer
+          type: accessor
+          cmd: ./bin/namer
+          grammar:
+            base: res://name/
+            groups:
+              - name: nameArg
+                regex: ".*"
+
+        - name: myfiles
+          type: fileset
+          grammar:
+            base: "res://std/"
+            groups:
+              - name: path
+                regex: ".*"
+
+        - name: example-files
+          type: fileset
+          grammar:
+            base: "res://examples/"
+            groups:
+              - name: path
+                regex: ".*"
+
+        - name: greeter
+          type: accessor
+          grammar:
+            base: res://hello
+            groups:
+              - name: "name"
+                regex: ".*"
+          cmd: ./bin/greeter

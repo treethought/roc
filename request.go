@@ -1,52 +1,77 @@
 package roc
 
 import (
-	"net/http"
+	"github.com/treethought/roc/proto"
 )
 
 // Request represents request for a resouce
 type Request struct {
-	Identifier          Identifier
-	Verb                Verb
-	RepresentationClass RepresentationClass
-	Arguments           map[string][]string
-	Headers             http.Header
-	argumentValues      map[string][]Representation
+	m *proto.Request
 }
 
-func NewRequest(i Identifier, verb Verb, class RepresentationClass) *Request {
+func NewRequest(i Identifier, verb proto.Verb, class RepresentationClass) *Request {
+	classStr := ""
+	if class != "" {
+		classStr = class.String()
+	}
+
 	return &Request{
-		Identifier:          i,
-		Verb:                verb,
-		RepresentationClass: class,
-		Arguments:           make(map[string][]string),
-		argumentValues:      make(map[string][]Representation),
+		m: &proto.Request{
+			Identifier:          i.String(),
+			Verb:                verb,
+			RepresentationClass: classStr,
+			Arguments:           make(map[string]*proto.StringSlice),
+			ArgumentValues:      make(map[string]*proto.Representation),
+		},
 	}
 }
 
+func (r *Request) Identifier() Identifier {
+	return NewIdentifier(r.m.Identifier)
+}
+
 // SetRepresentationClass sets the desired format of the representation response
-func (r *Request) SetRepresentationClass(class RepresentationClass) {
-	r.RepresentationClass = class
+func (r *Request) SetRepresentationClass(class string) {
+	r.m.RepresentationClass = class
 }
 
 // SetArgument sets the value of an argument to an identifier
 // The argument's representation can then be sources during evalutation
 // This replaces any existing values, to append an identifier, use AddArgument
 func (r *Request) SetArgument(name string, i Identifier) {
-	r.Arguments[name] = []string{i.String()}
+	r.m.Arguments[name] = &proto.StringSlice{
+		Values: []string{i.String()},
+	}
 }
 
 // AddArgument appends an identifier to any existing ones for the named arguement
 func (r *Request) AddArgument(name string, i Identifier) {
-	_, exists := r.Arguments[name]
+	_, exists := r.m.Arguments[name]
 	if !exists {
-		r.Arguments[name] = []string{}
+		r.m.Arguments[name] = &proto.StringSlice{}
 	}
-	r.Arguments[name] = append(r.Arguments[name], i.String())
+	r.m.Arguments[name].Values = append(r.m.Arguments[name].Values, i.String())
 }
 
 func (r *Request) SetArgumentByValue(name string, val Representation) {
-	r.argumentValues[name] = []Representation{val}
+	// pRep, err := repToProto(val)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// msg, ok := val.ProtoReflect().(protoreflect.ProtoMessage)
+	// if !ok {
+	// 	log.Error("rep value is not protoflect message")
+	// }
+
+	// m, err := anypb.New(msg)
+	// if err != nil {
+	// 	log.Error("failed to convert agument value to any", "err", err)
+	// 	panic(err)
+	// }
+
+	r.m.ArgumentValues[name] = val.Representation
+
 }
 
 // // Identifier returns the identifier of the requested resource

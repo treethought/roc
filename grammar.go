@@ -4,7 +4,15 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/treethought/roc/proto"
 )
+
+// https://mixedanalytics.com/blog/regex-match-number-subdirectories-url/
+// var RegexTypes = map[string]regexp.Regexp{
+// 	"anything":     regexp.MustCompile(".*"),
+// 	"path-segment": regexp.MustCompile("^[^/]+/[^/]+[a-zA-Z0-9]$"),
+// }
 
 type grammar interface {
 	ParseArguments(Identifier) map[string][]string
@@ -13,9 +21,8 @@ type grammar interface {
 }
 
 type Grammar struct {
-	Base   string         `json:"base,omitempty" yaml:"base"`
-	Groups []GroupElement `json:"groups,omitempty" yaml:"groups"`
-	uri    *url.URL
+	m   *proto.Grammar
+	uri *url.URL
 }
 
 func NewGrammar(base string, elems ...GroupElement) (Grammar, error) {
@@ -26,10 +33,17 @@ func NewGrammar(base string, elems ...GroupElement) (Grammar, error) {
 	}
 
 	grammar := Grammar{
-		Base:   uri.String(),
-		Groups: elems,
-		uri:    uri,
+		m: &proto.Grammar{
+			Base:   uri.String(),
+			Groups: []*proto.GroupElement{},
+		},
+		uri: uri,
 	}
+
+	for _, g := range elems {
+		grammar.m.Groups = append(grammar.m.Groups, g.GroupElement)
+	}
+
 	return grammar, nil
 }
 
@@ -43,8 +57,11 @@ func (g Grammar) String() string {
 func (g Grammar) Parse(i Identifier) (args map[string][]string) {
 	args = make(map[string][]string)
 
-	for _, group := range g.Groups {
-		for k, v := range group.Parse(g, i) {
+	for _, group := range g.m.Groups {
+
+		wrap := GroupElement{group}
+
+		for k, v := range wrap.Parse(g, i) {
 			_, exists := args[k]
 			if exists {
 				args[k] = append(args[k], v...)
@@ -60,9 +77,9 @@ func (g Grammar) Parse(i Identifier) (args map[string][]string) {
 func (g Grammar) Match(i Identifier) bool {
 	log.Debug("checking grammar",
 		"grammar", g.String(),
-		"identitifier", i,
+		"identitifier", i.String(),
 	)
-	log.Trace("parsing identitifier")
+	log.Debug("parsing identitifier", "identifier", i.String())
 	uri, err := url.Parse(i.String())
 	if err != nil {
 		log.Error("failed to parse identifier",
@@ -72,7 +89,7 @@ func (g Grammar) Match(i Identifier) bool {
 		return false
 	}
 
-	log.Trace("checking scheme", "uri_scheme", uri.Scheme, "grammar_scheme", g.uri.Scheme)
+	log.Info("checking scheme", "uri_scheme", uri.Scheme, "grammar_scheme", g.uri.Scheme)
 	if uri.Scheme != g.uri.Scheme {
 		log.Debug("scheme does not match")
 		return false
@@ -84,16 +101,18 @@ func (g Grammar) Match(i Identifier) bool {
 		return false
 	}
 
-	for _, p := range g.Groups {
-		if !p.Match(g, i) {
+	for _, p := range g.m.Groups {
+		wrap := GroupElement{p}
+		if !wrap.Match(g, i) {
 			log.Debug("group does not match", "group", p.Name)
 			return false
 		}
 	}
 
-	// log.Debug("checking path")
-	// if uri.Path != g.uri.Path {
-	// 	log.Debug("path does not match")
+	// log.Info("checking path", "uri_path", uri.Path, "grammar_path", g.uri.Path)
+	// if !(strings.HasPrefix(uri.Path, g.uri.Path)) {
+	// 	// if uri.Path != g.uri.Path {
+	// 	log.Info("path does not match")
 	// 	return false
 	// }
 	log.Debug("grammar matches",
@@ -110,16 +129,12 @@ type grammarElement struct {
 
 // groupElement defines segments of an identifier token
 type GroupElement struct {
-	Name     string `json:"name,omitempty" yaml:"name,omitempty"`
-	Min      uint64 `json:"min,omitempty" yaml:"min,omitempty"`
-	Max      uint64 `json:"max,omitempty" yaml:"max,omitempty"`
-	Encoding string `json:"encoding,omitempty" yaml:"encoding,omitempty"`
-	Regex    string `json:"regex,omitempty" yaml:"regex,omitempty"`
+	*proto.GroupElement
 }
 
 func (e GroupElement) Match(g Grammar, i Identifier) bool {
 	log.Debug("performing match grammar group element")
-	part := strings.Replace(i.String(), g.Base, "", 1)
+	part := strings.Replace(i.String(), g.m.Base, "", 1)
 	if e.Regex != "" {
 		rx, err := regexp.Compile(e.Regex)
 		if err != nil {
@@ -136,7 +151,7 @@ func (e GroupElement) Match(g Grammar, i Identifier) bool {
 
 func (e GroupElement) Parse(g Grammar, i Identifier) (args map[string][]string) {
 	args = make(map[string][]string)
-	parts := strings.Replace(i.String(), g.Base, "", 1)
+	parts := strings.Replace(i.String(), g.m.Base, "", 1)
 	if e.Regex != "" {
 		rx := regexp.MustCompile(e.Regex)
 		matches := rx.FindAllString(parts, -1)

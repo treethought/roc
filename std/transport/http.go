@@ -35,11 +35,16 @@ func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
 	identifier := roc.NewIdentifier(fmt.Sprintf("http:/%s", req.URL.String()))
 	log.Info("transport received request", "identifier", identifier, "url", req.URL.String())
 
-	// TODO refactor to use roc.Source()?
-
 	ctx := roc.NewRequestContext(identifier, proto.Verb_Source)
-	rep := roc.NewRepresentation(roc.NewHttpRequestDefinition(req))
-	ctx.Request().SetArgumentByValue("httpRequest", rep)
+
+	// create dynamic httpRequest accessor that will provide acess to http request
+	// rep := roc.NewHttpRequestDefinition(req)
+	rep := roc.NewHttpRequestMessage(req)
+
+	repr := roc.NewRepresentation(rep)
+
+	log.Info("setting httpRequest request arg value")
+	ctx.Request().SetArgumentByValue("httpRequest", repr)
 	// ctx.Request.SetArgumentByValue("httpResponse", w)
 
 	resp, err := t.Dispatch(ctx)

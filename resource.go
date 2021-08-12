@@ -3,7 +3,7 @@ package roc
 // Resource is an abstract model of information that is identified by one or more identifiers.
 type Resource interface {
 	// Source retrieves representation of resource
-	Source(request *RequestContext) Representation
+	Source(request *RequestContext) interface{}
 
 	// Sink updates resource to reflect representation
 	Sink(request *RequestContext)

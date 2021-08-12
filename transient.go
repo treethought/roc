@@ -19,16 +19,17 @@ type TransientEndpoint struct {
 
 func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
 
-	repProto, err := repToProto(NewRepresentation(rep))
-	if err != nil {
-		log.Error("failed to convert transient rep to proto", "err", err)
-	}
+	// repProto, err := repToProto(NewRepresentation(rep))
+	// if err != nil {
+	// 	log.Error("failed to convert transient rep to proto", "err", err)
+	// }
 
 	uid := uuid.New()
 	uri := fmt.Sprintf("transient://%s", uid.String())
 
-	any := repProto.GetValue()
-	log.Warn("creating transient endpoint",
+	repr := Representation{rep}
+	any := repr.Any()
+	log.Debug("creating transient endpoint from representation",
 		"any_url", any.TypeUrl,
 		"uri", uri,
 		// "lit_type", ed.Literal.ProtoReflect().Descriptor().Name(),
@@ -42,20 +43,23 @@ func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
 	return TransientEndpoint{
 		BaseEndpoint:   BaseEndpoint{},
 		Grammar:        grammar,
-		Representation: NewRepresentation(rep),
+		Representation: repr,
 	}
 }
 
 func (e *TransientEndpoint) Definition() EndpointDefinition {
-	repProto, err := repToProto(e.Representation)
-	if err != nil {
-		log.Error("failed to set transient endpoint definition literal", "err", err)
-		panic(err)
-	}
+	// repProto, err := repToProto(e.Representation)
+	// if err != nil {
+	// 	log.Error("failed to set transient endpoint definition literal", "err", err)
+	// 	panic(err)
+	// }
 
-	any := repProto.GetValue()
-	log.Warn("creating transient definition",
+	any := e.Representation.Any()
+	log.Debug("creating transient definition",
 		"any_url", any.TypeUrl,
+		"grammar", e.Grammar.String(),
+		"literal", e.Representation.Any().String(),
+
 		// "lit_type", ed.Literal.ProtoReflect().Descriptor().Name(),
 	)
 
@@ -68,7 +72,7 @@ func (e *TransientEndpoint) Definition() EndpointDefinition {
 			Type:    EndpointTypeTransient,
 			Grammar: e.Grammar.m,
 			// TODO: repProto?
-			Literal: repProto,
+			Literal: e.Representation.Representation,
 		},
 	}
 }
@@ -81,6 +85,21 @@ func (e TransientEndpoint) Type() string {
 	return EndpointTypeTransient
 }
 
-func (e TransientEndpoint) Source(ctx *RequestContext) Representation {
-	return e.Representation
+func (e TransientEndpoint) Source(ctx *RequestContext) interface{} {
+	log.Debug("sourcing transient endpoint",
+		"identifier", ctx.Request().Identifier(),
+	)
+	m, err := e.Representation.ToMessage()
+	if err != nil {
+		log.Error("failed to contruct concreate transient represent")
+		return err
+	}
+
+	log.Info("returning transient representation",
+		"type", m.ProtoReflect().Descriptor().FullName().Name(),
+		"identifier", e.Identifier().String(),
+		"gramar", e.Grammar.String(),
+	)
+
+	return m
 }

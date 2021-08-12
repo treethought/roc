@@ -99,7 +99,7 @@ func canResolve(ctx *RequestContext, e *proto.EndpointDefinition) bool {
 
 func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 	for _, ed := range s.m.Endpoints {
-		log.Debug("interrogating endpoint",
+		log.Trace("interrogating endpoint",
 			"space", s.m.Identifier,
 			"endpoint", ed.Name,
 		)

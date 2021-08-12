@@ -2,6 +2,7 @@ package roc
 
 import (
 	"github.com/treethought/roc/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // Request represents request for a resouce
@@ -21,7 +22,7 @@ func NewRequest(i Identifier, verb proto.Verb, class RepresentationClass) *Reque
 			Verb:                verb,
 			RepresentationClass: classStr,
 			Arguments:           make(map[string]*proto.StringSlice),
-			ArgumentValues:      make(map[string]*proto.Representation),
+			ArgumentValues:      make(map[string]*anypb.Any),
 		},
 	}
 }
@@ -70,7 +71,8 @@ func (r *Request) SetArgumentByValue(name string, val Representation) {
 	// 	panic(err)
 	// }
 
-	r.m.ArgumentValues[name] = val.Representation
+	log.Warn("setting argument value", "arg", name, "val_type", val.Any().TypeUrl)
+	r.m.ArgumentValues[name] = val.Representation.Value
 
 }
 

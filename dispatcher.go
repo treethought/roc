@@ -21,7 +21,7 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition 
 
 	c := make(chan (EndpointDefinition))
 	for _, s := range ctx.m.Scope.Spaces {
-		log.Debug("checking space: ", "space", s.Identifier)
+		log.Trace("checking space: ", "space", s.Identifier)
 		wrap := Space{s}
 		go wrap.Resolve(ctx, c)
 	}
@@ -87,13 +87,20 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Trace(fmt.Sprintf("%+v", ed))
 
 	if ed.Literal != nil {
-		log.Warn("ed literal",
+		log.Info("resolvied to literal endpoint",
 			"val", ed.Literal,
 			"type_url", ed.Literal.GetValue().TypeUrl,
-			"type", ed.Literal.ProtoReflect().Descriptor().Name(),
-			"id", ctx.Request().Identifier)
+			"type", ed.Literal.ProtoReflect().Descriptor().FullName().Name(),
+			"id", ctx.Request().Identifier().String(),
+		)
 
 	}
+
+	// repr := Representation{ed.Literal}
+	// if repr.Is(&proto.HttpRequest{}) {
+	// 	log.Error("SETTING TYPE FOR HTTPREQUESt")
+	// 	ed.Type = EndpointTypeHTTPRequestAccessor
+	// }
 
 	injectParsedArgs(ctx, ed)
 
@@ -135,17 +142,21 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	}
 
 	log.Debug("evaluating request",
-		"identifier", ctx.Request().Identifier,
+		"identifier", ctx.Request().Identifier().String(),
 		"verb", ctx.Request().m.Verb,
+		"ed_type", ed.Type,
 	)
 	rep := Evaluate(ctx, endpoint)
+
+	repr := NewRepresentation(rep)
 
 	// TODO route verbs to methods
 	// rep := endpoint.Source(ctx)
 	log.Info("dispatch received response",
 		"identifier", ctx.Request().Identifier().String(),
 		"representation", rep,
-		"type_name", rep.ProtoReflect().Descriptor().Name(),
+		"type_name", repr.ProtoReflect().Descriptor().Name(),
+		"type_url", repr.GetValue().TypeUrl,
 	)
-	return rep, nil
+	return repr, nil
 }

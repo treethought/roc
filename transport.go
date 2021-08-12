@@ -44,11 +44,9 @@ func NewTransport(name string) *TransportImpl {
 }
 
 func (t *TransportImpl) Init(msg *InitTransport) error {
-	log.Debug("initializing transport scope")
-	log.Warn("scope", "msg", msg)
+	log.Debug("initializing transport scope", "size", len(msg.Scope.m.Spaces))
 	t.Scope = msg.Scope
 	log.Info("transporter has been initialized")
-	log.Trace("transporter scope", "scope", t.Scope)
 	return t.OnInit()
 }
 

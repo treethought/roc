@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 
 	"github.com/treethought/roc/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var EndpointTypeHTTPRequestAccessor = "accessor:std"
@@ -46,7 +44,7 @@ func NewHttpRequestMessage(req *http.Request) *proto.HttpRequest {
 }
 
 func NewHttpRequestDefinition(req *http.Request) EndpointDefinition {
-	log.Warn("creating new httpRequest definition")
+	log.Info("creating new httpRequest literal definition")
 
 	typeGroup := GroupElement{
 		GroupElement: &proto.GroupElement{
@@ -62,50 +60,47 @@ func NewHttpRequestDefinition(req *http.Request) EndpointDefinition {
 	// }
 	grammar, err := NewGrammar("httpRequest://params", typeGroup)
 	if err != nil {
+		log.Error("failed to create httpRequest definition grammar", "err", err)
 		panic(err)
 	}
 
 	// grammar.m.Groups = append(grammar.m.Groups, typeGroup)
 
-	lit, err := repToProto(NewRepresentation(repr))
-	if err != nil {
-		log.Error(err.Error())
-		panic(err)
-	}
+	litRep := NewRepresentation(repr)
 	ed := EndpointDefinition{
 		EndpointDefinition: &proto.EndpointDefinition{
 			Name:    "httpRequest",
 			Grammar: grammar.m,
-			Literal: lit,
+			Literal: litRep.Representation,
 			Type:    EndpointTypeHTTPRequestAccessor,
 		},
 	}
-	log.Warn("created with literal", "class", reflect.TypeOf(ed.Literal))
+	log.Warn("created with httpRequest def with literal", "type", litRep.Name().Name())
 	return ed
 
 }
 
 func NewHttpRequestEndpoint(ed EndpointDefinition) HttpRequestEndpoint {
-	// any, err := anypb.New(ed.Literal.GetValue())
-	// if err != nil {
-	// 	log.Error(err.Error())
-	// 	panic(err)
-	// }
+	rep := Representation{ed.Literal}
 
-	any := ed.Literal.GetValue()
-	log.Warn("creating httpRequest literal endpoint",
-		"any_url", any.TypeUrl,
-		"lit_type", ed.Literal.ProtoReflect().Descriptor().Name(),
+	// any := ed.Literal.GetValue()
+	log.Warn("creating httpRequest literal endpoint for",
+		"any_url", rep.Type(),
+		"type_name", rep.Name().Name(),
 	)
 
-	m := new(proto.HttpRequest)
-	err := any.UnmarshalTo(m)
-	if err != nil {
-		log.Error("httpRequest acessor literal is not a request", "literal", ed.Literal.GetValue().TypeUrl)
-		log.Error(fmt.Sprintf("%+v", ed))
-		panic("httpRequest acessor literal is not a request")
-
+	if !rep.Is(&proto.HttpRequest{}) {
+		log.Error("http accessor definition literal is not httpRequest, trying to convert", "type", rep.Type())
 	}
+
+	m := new(proto.HttpRequest)
+	err := rep.MarshalTo(m)
+	if err != nil {
+		log.Error("failed to marshal representation to httpRequest")
+		panic(err)
+	}
+
+	log.Warn("CREATING HTTP REQUEST ENDPOINT")
 
 	return HttpRequestEndpoint{
 		BaseEndpoint: BaseEndpoint{},
@@ -116,17 +111,17 @@ func NewHttpRequestEndpoint(ed EndpointDefinition) HttpRequestEndpoint {
 
 func (e HttpRequestEndpoint) Definition() EndpointDefinition {
 
-	lit, err := repToProto(NewRepresentation(e.request))
-	if err != nil {
-		log.Error(err.Error())
-		panic(err)
-	}
+	repr := NewRepresentation(e.request)
+	log.Error("creating http request endpoint DEFI",
+		"type", repr.Type(),
+	)
+
 	return EndpointDefinition{
 		EndpointDefinition: &proto.EndpointDefinition{
 			Name:    e.Grammar.String(),
 			Grammar: e.Grammar.m,
 			Type:    EndpointTypeHTTPRequestAccessor,
-			Literal: lit,
+			Literal: repr.Representation,
 		},
 	}
 }
@@ -139,9 +134,9 @@ func (e HttpRequestEndpoint) Type() string {
 	return EndpointTypeHTTPRequestAccessor
 }
 
-func (e HttpRequestEndpoint) Source(ctx *RequestContext) Representation {
+func (e HttpRequestEndpoint) Source(ctx *RequestContext) interface{} {
 	log.Error("sourcing httpRequest accessor")
-	return NewRepresentation(e.request)
+	return e.request
 
 	// part, err := ctx.GetArgumentValue("type")
 	// if err != nil {
@@ -169,7 +164,7 @@ func NewHTTPBridgeOverlay(ed EndpointDefinition) HttpBridgeOverlay {
 	}
 }
 
-func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) Representation {
+func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) interface{} {
 	// transparent hook, cannot modify response
 	log.Warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 	log.Info("getting httpRequest arg")
@@ -180,19 +175,23 @@ func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) Representation {
 		log.Error("failed to get requst representation")
 		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
 	}
+	log.Warn("received httpRequest arg representation",
+		"type", req.Name().Name(),
+		"type_url", req.Type(),
+	)
 
-	any, err := anypb.New(req)
-	if err != nil {
-		log.Error(err.Error())
-		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+	any := req.Representation.Value
+	log.Warn("converting arg value to httpRequest", "any_url", any.TypeUrl)
+
+	if !req.Is(&proto.HttpRequest{}) {
+		log.Error("httprequest arg is not httpRequest, trying to convert", "type", req.Name().Name())
 	}
 
 	m := new(proto.HttpRequest)
-	err = any.UnmarshalTo(m)
+	err = req.MarshalTo(m)
 	if err != nil {
-		log.Error("httpRequest acessor literal is not a request", "literal", any.GetTypeUrl())
-		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
-
+		log.Error("failed to marshal ARG representation to httpRequest", "err")
+		return err
 	}
 
 	// httpReq, ok := req.(*http.Request)
@@ -222,7 +221,7 @@ func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) Representation {
 	httpReq, err := http.NewRequest(m.RequestMethod, m.RequestUrl, bytes.NewReader(m.RequestBody))
 	if err != nil {
 		log.Error(err.Error())
-		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		return err
 	}
 
 	log.Info("creating dynamic http request space")

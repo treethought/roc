@@ -24,10 +24,10 @@ type Endpoint interface {
 // Evaluator can be implemented by an endpoint to overide the default request evaluation switch
 type Evaluator interface {
 	// Evaluate processes a request to create or return a Representation of the requested resource
-	Evaluate(ctx *RequestContext) Representation
+	Evaluate(ctx *RequestContext) interface{}
 }
 
-func Evaluate(ctx *RequestContext, e Endpoint) Representation {
+func Evaluate(ctx *RequestContext, e Endpoint) interface{} {
 
 	// defer to endpoint's custom implementation if defined
 	defined, ok := e.(Evaluator)
@@ -60,9 +60,9 @@ func Evaluate(ctx *RequestContext, e Endpoint) Representation {
 
 type BaseEndpoint struct{}
 
-func (e BaseEndpoint) Source(ctx *RequestContext) Representation {
-	log.Info("using default source handler")
-	return NewRepresentation(nil)
+func (e BaseEndpoint) Source(ctx *RequestContext) interface{} {
+	log.Error("using default source handler")
+	return nil
 }
 
 func (e BaseEndpoint) Sink(ctx *RequestContext) {}

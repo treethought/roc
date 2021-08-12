@@ -32,13 +32,13 @@ func (e TransparentOverlay) Type() string {
 	return EndpointTypeTransparentOverlay
 }
 
-func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
+func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {
 	// transparent hook, cannot modify response
 	log.Warn("-------------------------------------")
 
 	o.onRequest(ctx)
 
-	log.Info("overlay handling request", "identifier", ctx.Request().Identifier)
+	log.Info("overlay handling request", "identifier", ctx.Request().Identifier().String())
 
 	uri, err := ctx.GetArgumentValue("uri")
 	if err != nil {
@@ -48,10 +48,28 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
 
 	log.Warn("OVERLAY GOT URI", "uri", uri)
 
+	m := new(proto.String)
+	err = uri.MarshalTo(m)
+	if err != nil {
+		log.Error("fialed to convert uri to string ")
+		return err
+	}
+
+	// if !uri.Is(&proto.String{}) {
+	// 	log.Error("uri was is not a string, convertying", "type", uri.Name().Name())
+	// }
+
+	// m := new(proto.HttpRequest)
+	// err = req.MarshalTo(m)
+	// if err != nil {
+	// 	log.Error("failed to marshal ARG representation to httpRequest", "err")
+	// 	return err
+	// }
+
 	// reformat the identifier for context of wrapped space
 	// build new res:// scheme from overlay prefix's root
 	// i.e. res://app/helloworld -> uri=/helloworld -> res://helloworld
-	id := NewIdentifier(fmt.Sprintf("res://%s", uri))
+	id := NewIdentifier(fmt.Sprintf("res://%s", m.GetValue()))
 
 	// inject the wrapped space into the request scope and
 	// issue request into our wrapped space which is otherwise

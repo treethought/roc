@@ -1,6 +1,8 @@
 package roc
 
 import (
+	"reflect"
+
 	"github.com/treethought/roc/proto"
 	protov2 "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -50,16 +52,45 @@ type Representation struct {
 }
 
 func NewRepresentation(val interface{}) Representation {
-	log.Info("creating representation from", "val", val)
+	log.Debug("creating representation from", "type", reflect.TypeOf(val))
 
 	var msg protoreflect.ProtoMessage
 
 	switch v := val.(type) {
+
+	case *anypb.Any:
+		log.Debug("REPRESENTATION IS ALREADY ANY, unmarshalling")
+		m, err := v.UnmarshalNew()
+		if err != nil {
+			log.Error("failed ot unmarshal new concreate any", "err", err)
+			panic(err)
+		}
+		msg = m
+
+	case *proto.Representation:
+		log.Debug("REPRESENTATION IS ALREADY *PROTO.REPRESENTATION, unmarshalling")
+		m, err := v.Value.UnmarshalNew()
+		if err != nil {
+			log.Error("failed ot unmarshal new concreate any", "err", err)
+			panic(err)
+		}
+		// return NewRepresentation(m)
+		msg = m
+
 	case Representation:
+		log.Debug("representation is already representation, unmarshalling")
+		m, err := v.Any().UnmarshalNew()
+		if err != nil {
+			log.Error("failed ot unmarshal new conreate any", "err", err)
+			panic(err)
+		}
+		msg = m
+
 		return v
 
 	case protov2.Message:
 		msg = v
+		log.Debug("REPRESENTATION IS ALREADY mESSAGE", "name", msg.ProtoReflect().Descriptor().Name())
 
 	case string:
 		msg = &proto.String{Value: v}
@@ -67,7 +98,11 @@ func NewRepresentation(val interface{}) Representation {
 	case nil:
 		msg = &proto.Empty{}
 
+	case error:
+		msg = &proto.ErrorMessage{Message: v.Error()}
+
 	default:
+		log.Warn("creating representation with struct")
 		sval, err := structpb.NewValue(val)
 		if err != nil {
 			log.Error("failed to convert representation to proto struct")
@@ -83,8 +118,34 @@ func NewRepresentation(val interface{}) Representation {
 
 	}
 
-	return Representation{Representation: &proto.Representation{Value: any}}
+	log.Warn("created representation",
+		"from_type", reflect.TypeOf(val),
+		"any_url", any.TypeUrl,
+	)
 
+	return Representation{Representation: &proto.Representation{Value: any}}
+}
+
+func (r *Representation) Any() *anypb.Any {
+	return r.Representation.GetValue()
+}
+
+func (r *Representation) Is(m protov2.Message) bool {
+	return r.Any().MessageIs(m)
+}
+
+func (r *Representation) ToMessage() (protov2.Message, error) {
+	return r.Any().UnmarshalNew()
+}
+
+func (r Representation) MarshalTo(m protov2.Message) error {
+	return r.Any().UnmarshalTo(m)
+}
+func (r Representation) Name() protoreflect.FullName {
+	return r.Any().MessageName()
+}
+func (r Representation) Type() string {
+	return r.Any().TypeUrl
 }
 
 // type Representation interface {

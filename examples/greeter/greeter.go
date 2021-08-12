@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/treethought/roc"
 	"github.com/treethought/roc/proto"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var log = hclog.Default()
@@ -21,23 +20,8 @@ func New() *MyEndpoint {
 	}
 }
 
-func getAsString(rep roc.Representation) (*proto.String, error) {
-	// TODO: this needs to be handled with response vlass behnd the scenes
-	any, err := anypb.New(rep)
-	if err != nil {
-		return nil, err
-	}
-
-	m := new(proto.String)
-	err = any.UnmarshalTo(m)
-	if err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 // Source retrieves representation of resource
-func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
+func (e *MyEndpoint) Source(ctx *roc.RequestContext) interface{} {
 	log.Error("Executing source in greeter", "identifier", ctx.Request().Identifier)
 
 	log.Warn("Making subrequest", "target", "res://name")
@@ -51,15 +35,17 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
 
 	name, err := ctx.GetArgumentValue("name")
 	if err != nil {
-		return roc.NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		log.Error("failed to get name argument", "err", err)
+		// return roc.NewRepresentation(&proto.ErrorMessage{Message: err.Error)})
 	}
 
-	m, err := getAsString(name)
+	m := new(proto.String)
+	err = name.MarshalTo(m)
 	if err != nil {
-		return roc.NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		log.Error("failed to marshal argument to string", "err", err)
 	}
 
-	if m.Value == "" {
+	if m.GetValue() == "" {
 		m.Value = "bonne"
 	}
 
@@ -72,14 +58,15 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
 		log.Error("failed to dispatch subrequest request", "error", err)
 	}
 
-	m, err = getAsString(nameResp)
+	r := new(proto.String)
+	err = nameResp.MarshalTo(r)
 	if err != nil {
-		return roc.NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		r.Value = "MISSING NAME"
 	}
 
-	m.Value = fmt.Sprintf("hello world: %s", m.Value)
+	r.Value = fmt.Sprintf("hello world: %s", r.Value)
 
-	return roc.NewRepresentation(m)
+	return r
 }
 
 func main() {

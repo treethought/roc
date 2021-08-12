@@ -100,7 +100,7 @@ message Request {
   map<string, StringSlice> arguments = 4;
   map<string, StringSlice> headers = 5;
   /* google.protobuf.Struct argument_values = 6; */
-  map<string, Representation> argument_values = 6;
+  map<string, google.protobuf.Any> argument_values = 6;
   /* repeated MapField arguments  = 4; */
   /* repeated MapField headers  = 5; */
 }

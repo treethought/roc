@@ -35,7 +35,7 @@ func getAsString(rep roc.Representation) (*proto.String, error) {
 }
 
 // Source retrieves representation of resource
-func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
+func (e *MyEndpoint) Source(ctx *roc.RequestContext) interface{} {
 	log.Debug("Sourcing", "request", ctx.Request)
 	ctx.Request().SetRepresentationClass("")
 
@@ -49,7 +49,7 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) roc.Representation {
 		return roc.NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
 	}
 
-	return roc.NewRepresentation(m)
+	return m
 
 }
 

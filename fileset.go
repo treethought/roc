@@ -62,11 +62,11 @@ func (e Fileset) Definition() EndpointDefinition {
 	}
 }
 
-func (e Fileset) Source(ctx *RequestContext) Representation {
+func (e Fileset) Source(ctx *RequestContext) interface{} {
 	path := strings.Replace(ctx.Request().Identifier().String(), "res://", "", 1)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
 	}
-	return NewRepresentation(&proto.String{Value: string(data)})
+	return string(data)
 }

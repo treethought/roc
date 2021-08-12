@@ -59,11 +59,13 @@ func (c *RequestContext) GetArgument(name string) Identifier {
 func (c *RequestContext) GetArgumentValue(name string) (Representation, error) {
 	identifier := c.GetArgument(name)
 	if identifier.String() == "" {
+		log.Error("argument identifier is empty", "arg_name", name)
 		return NewRepresentation(nil), nil
 	}
 
 	rep, err := c.Source(identifier, "")
 	if err != nil {
+		log.Error("failed to source argument", "arg_name", name, "identifier", identifier.String(), "err", err)
 		return NewRepresentation(nil), err
 	}
 	return rep, nil
@@ -80,11 +82,14 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 	for k, val := range req.m.ArgumentValues {
 		// create pbv endpoint to hold representation
 
-		pbvEndpoint := NewTransientEndpoint(val)
+		rep := NewRepresentation(val)
+
+		pbvEndpoint := NewTransientEndpoint(rep.Representation)
 		log.Info("created transient pbv endpoint",
 			"arg", k, "val", val,
 			"identifier", pbvEndpoint.Identifier(),
-			"type_url", val.GetValue().TypeUrl)
+			"type_url", val.TypeUrl,
+		)
 
 		// set the argument value to the pbv identifier
 		req.SetArgument(k, pbvEndpoint.Identifier())

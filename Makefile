@@ -10,8 +10,7 @@ clean:
 	rm -rf bin/*
 
 build:
-	go build -o ./bin/greeter ./examples/greeter
-	go build -o ./bin/namer ./examples/namer
+	go build -o ./bin/ ./examples/...
 	go build -o ./bin/std/ ./std/...
 
 protos:

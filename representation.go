@@ -12,6 +12,7 @@ import (
 
 // Identifier is an opaque token that identifies a single resource
 // a resource may have one or more identifiers
+
 type Identifier struct {
 	m *proto.String
 }
@@ -23,6 +24,7 @@ func NewIdentifier(val string) Identifier {
 func (i Identifier) ProtoReflect() protoreflect.Message {
 	return i.m.ProtoReflect()
 }
+
 func (i Identifier) String() string {
 	return i.m.GetValue()
 }
@@ -110,7 +112,7 @@ func NewRepresentation(val interface{}) Representation {
 		log.Warn("creating unknown representation as struct")
 		sval, err := structpb.NewValue(val)
 		if err != nil {
-			log.Error("failed to convert representation to proto struct")
+			log.Error("failed to convert representation to proto struct", "err", err)
 		}
 		msg = sval
 

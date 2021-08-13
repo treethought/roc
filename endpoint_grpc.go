@@ -6,7 +6,6 @@ import (
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/treethought/roc/proto"
 	"golang.org/x/net/context"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // EndpointGRPC is an implementation of KV that talks over RPC.
@@ -22,9 +21,7 @@ func (m *EndpointGRPC) Source(ctx *RequestContext) interface{} {
 		log.Error("error making grpc call", "error", err)
 		panic(err)
 	}
-
-	log.Debug("received rpc call response", "resp", resp)
-	return NewRepresentation(resp)
+	return resp
 }
 
 func (m *EndpointGRPC) Sink(ctx *RequestContext) {
@@ -71,28 +68,6 @@ type EndpointGRPCServer struct {
 	Impl Endpoint
 
 	broker *plugin.GRPCBroker
-}
-
-func repToProto(rep Representation) (*proto.Representation, error) {
-	any, err := anypb.New(rep)
-	if err != nil {
-		log.Error("failed to construct any")
-		return nil, err
-	}
-
-	log.Warn("translating representation to proto msg",
-		"desc_name", rep.ProtoReflect().Descriptor().Name(),
-		"any_url", any.TypeUrl,
-	)
-
-	// m := new(proto.Representation)
-	// err = any.UnmarshalTo(m)
-	// if err != nil {
-	// 	log.Error("failed to unmarshal to rep")
-	// 	return nil, err
-	// }
-	// return m, nil
-	return &proto.Representation{Value: any}, nil
 }
 
 func (m *EndpointGRPCServer) Source(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {

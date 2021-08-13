@@ -89,23 +89,6 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type)
 	log.Trace(fmt.Sprintf("%+v", ed))
 
-	// if ed.Literal != nil {
-	// 	log.Info("resolvied to literal endpoint",
-	// 		"val", ed.Literal,
-	// 		"type_url", ed.Literal.GetValue().TypeUrl,
-	// 		"type", ed.Literal.ProtoReflect().Descriptor().FullName().Name(),
-	// 		"id", ctx.Request().Identifier().String(),
-	// 	)
-
-	// }
-
-	// TODO have the type set correctly beforehand
-	// repr := Representation{ed.Literal}
-	// if repr.Is(&proto.HttpRequest{}) {
-	// 	ed.Type = EndpointTypeHTTPRequestAccessor
-	// 	log.Warn("set endpoint type based on representation", "type", ed.Type, "representation", repr.Name())
-	// }
-
 	injectParsedArgs(ctx, ed)
 
 	ctx.injectValueSpace(ctx.Request())

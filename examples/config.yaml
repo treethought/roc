@@ -65,13 +65,22 @@ spaces:
               space:
                 identifier: space://my-wrapped
                 endpoints:
-                  - name: namer
+                  - name: greeter
                     type: accessor
-                    cmd: ./bin/namer
                     grammar:
-                      base: res://name/
+                      base: res://hello/
                       groups:
-                        - name: nameArg
+                        - name: name
+                          regex: ".*"
+                    cmd: ./bin/greeter
+
+                  - name: upper
+                    type: accessor
+                    cmd: ./bin/upper
+                    grammar:
+                      base: res://toUpper/
+                      groups:
+                        - name: value
                           regex: ".*"
 
                   - name: myfiles
@@ -90,8 +99,3 @@ spaces:
                         - name: path
                           regex: ".*"
 
-                  - name: greeter
-                    type: accessor
-                    grammar:
-                      base: res://hello
-                    cmd: ./bin/greeter

@@ -77,7 +77,7 @@ func (m *EndpointGRPCServer) Source(ctx context.Context, req *proto.RequestConte
 	rep := m.Impl.Source(rocCtx)
 
 	log.Debug("returning source implementation as grpc response", "rep", rep)
-	return NewRepresentation(rep).Representation, nil
+	return NewRepresentation(rep).message(), nil
 }
 
 func (m *EndpointGRPCServer) Sink(ctx context.Context, req *proto.RequestContext) (*proto.Empty, error) {

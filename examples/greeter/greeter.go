@@ -43,11 +43,9 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) interface{} {
 	}
 
 	s := new(proto.String)
-	if upped.Is(s) {
-		err := upped.MarshalTo(s)
-		if err != nil {
-			return err
-		}
+	err = upped.To(s)
+	if err != nil {
+		return err
 	}
 
 	return fmt.Sprintf("hello world: %s\n", s.Value)

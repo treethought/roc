@@ -85,10 +85,10 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 
 		rep := NewRepresentation(val)
 
-		pbvEndpoint := NewTransientEndpoint(rep.Representation)
+		pbvEndpoint := NewTransientEndpoint(rep.m)
 
 		log.Info("created transient pbv endpoint",
-			"arg", k, "type", rep.Name(),
+			"arg", k, "type", rep.Type(),
 			"identifier", pbvEndpoint.Identifier(),
 		)
 

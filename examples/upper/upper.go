@@ -29,11 +29,9 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) interface{} {
 	}
 
 	s := new(proto.String)
-	if value.Is(s) {
-		err := value.MarshalTo(s)
-		if err != nil {
-			return err
-		}
+	err = value.To(s)
+	if err != nil {
+		return err
 	}
 
 	return strings.ToUpper(s.Value)

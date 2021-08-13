@@ -23,10 +23,10 @@ func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
 
 	repr := Representation{rep}
 	log.Debug("creating transient endpoint",
-		"type", repr.Name(),
+		"type", repr.Type(),
 		"uri", uri,
 	)
-	log.Trace(repr.Value.String())
+	log.Trace(repr.String())
 
 	grammar, err := NewGrammar(uri)
 	if err != nil {
@@ -47,7 +47,7 @@ func (e *TransientEndpoint) Definition() EndpointDefinition {
 			Name:    e.Grammar.String(),
 			Type:    EndpointTypeTransient,
 			Grammar: e.Grammar.m,
-			Literal: e.Representation.Representation,
+			Literal: e.Representation.message(),
 		},
 	}
 }
@@ -63,9 +63,9 @@ func (e TransientEndpoint) Type() string {
 func (e TransientEndpoint) Source(ctx *RequestContext) interface{} {
 	log.Debug("sourcing transient endpoint",
 		"identifier", ctx.Request().Identifier(),
-		"type", e.Representation.Name(),
+		"type", e.Representation.Type(),
 	)
-	log.Trace(e.Representation.Value.String())
+	log.Trace(e.Representation.String())
 
 	m, err := e.Representation.ToMessage()
 	if err != nil {

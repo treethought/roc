@@ -140,8 +140,8 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	// rep := endpoint.Source(ctx)
 	log.Info("dispatch received response",
 		"identifier", ctx.Request().Identifier().String(),
-		"representation", repr.Name(),
+		"representation", repr.Type(),
 	)
-	log.Trace(repr.Value.String())
+	log.Info(repr.String())
 	return repr, nil
 }

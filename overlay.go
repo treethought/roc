@@ -45,7 +45,7 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {
 	}
 
 	m := new(proto.String)
-	err = uri.MarshalTo(m)
+	err = uri.To(m)
 	if err != nil {
 		log.Error("fialed to convert uri to string", "err", err)
 		return err

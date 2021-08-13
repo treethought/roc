@@ -71,7 +71,7 @@ func NewHttpRequestDefinition(req *http.Request) EndpointDefinition {
 		EndpointDefinition: &proto.EndpointDefinition{
 			Name:    "httpRequest",
 			Grammar: grammar.m,
-			Literal: litRep.Representation,
+			Literal: litRep.m,
 			Type:    EndpointTypeHTTPRequestAccessor,
 		},
 	}
@@ -83,15 +83,15 @@ func NewHttpRequestEndpoint(ed EndpointDefinition) HttpRequestEndpoint {
 	rep := Representation{ed.Literal}
 
 	log.Info("creating httpRequest accessor",
-		"type", rep.Name(),
+		"type", rep.Type(),
 	)
 
 	if !rep.Is(&proto.HttpRequest{}) {
-		log.Warn("http accessor definition literal is not httpRequest, trying to convert", "type", rep.Type())
+		log.Warn("http accessor definition literal is not httpRequest, trying to convert", "url", rep.URL())
 	}
 
 	m := new(proto.HttpRequest)
-	err := rep.MarshalTo(m)
+	err := rep.To(m)
 	if err != nil {
 		log.Error("failed to marshal representation to httpRequest", "err", err)
 		panic(err)
@@ -112,7 +112,7 @@ func (e HttpRequestEndpoint) Definition() EndpointDefinition {
 			Name:    e.Grammar.String(),
 			Grammar: e.Grammar.m,
 			Type:    EndpointTypeHTTPRequestAccessor,
-			Literal: repr.Representation,
+			Literal: repr.message(),
 		},
 	}
 }
@@ -165,15 +165,14 @@ func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) interface{} {
 		return err
 	}
 
-	any := req.Representation.Value
-	log.Debug("converting arg value to httpRequest", "any_url", any.TypeUrl)
+	log.Debug("converting arg value to httpRequest", "url", req.URL())
 
 	if !req.Is(&proto.HttpRequest{}) {
-		log.Warn("httprequest arg is not httpRequest, will try to convert", "type", req.Name().Name())
+		log.Warn("httprequest arg is not httpRequest, will try to convert", "type", req.Type())
 	}
 
 	m := new(proto.HttpRequest)
-	err = req.MarshalTo(m)
+	err = req.To(m)
 	if err != nil {
 		log.Error("failed to marshal representation to httpRequest", "err", err)
 		return err

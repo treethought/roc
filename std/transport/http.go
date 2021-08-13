@@ -55,7 +55,7 @@ func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	m := new(proto.String)
-	err = resp.MarshalTo(m)
+	err = resp.To(m)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return

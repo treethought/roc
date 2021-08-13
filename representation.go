@@ -29,20 +29,11 @@ func (i Identifier) String() string {
 	return i.m.GetValue()
 }
 
-// func (i Identifier) String() string {
-// 	return i
-// }
-
 type RepresentationClass string
 
 func (r RepresentationClass) String() string {
 	return string(r)
 }
-
-// type RepresentationClass interface {
-// 	String() string
-// 	Identifier() Identifier
-// }
 
 type ComparibleRepresentation interface {
 	Equals(interface{}) bool
@@ -50,7 +41,7 @@ type ComparibleRepresentation interface {
 }
 
 type Representation struct {
-	*proto.Representation
+	m *proto.Representation
 }
 
 func NewRepresentation(val interface{}) Representation {
@@ -82,7 +73,7 @@ func NewRepresentation(val interface{}) Representation {
 		// unwrap to any and unmarshal to remote type, don't want nested Representations
 	case Representation:
 		log.Debug("representation is already representation, unmarshalling")
-		m, err := v.Any().UnmarshalNew()
+		m, err := v.ToMessage()
 		if err != nil {
 			log.Error("failed ot unmarshal new conreate any", "err", err)
 			panic(err)
@@ -125,38 +116,57 @@ func NewRepresentation(val interface{}) Representation {
 
 	}
 
-	rep := Representation{Representation: &proto.Representation{Value: any}}
+	rep := Representation{m: &proto.Representation{Value: any}}
 
 	log.Debug("created representation",
 		"from", reflect.TypeOf(val),
-		"type", rep.Name(),
+		"type", rep.Type(),
 	)
 
 	return rep
 }
 
-func (r *Representation) Any() *anypb.Any {
-	return r.Representation.GetValue()
+func (r Representation) ProtoReflect() protoreflect.Message {
+	return r.m.ProtoReflect()
 }
 
+// messag provides the wrapped Representation proto message
+func (r Representation) message() *proto.Representation {
+	return r.m
+}
+
+// String returns the deserialized representation of the underlying type
+// if the underlying type has a custom JSON representation, that will be returned instead
+func (r Representation) String() string {
+	return r.any().String()
+}
+
+// any returns the underlying Any proto message
+func (r *Representation) any() *anypb.Any {
+	return r.m.GetValue()
+}
+
+// Is reports whether the representation is the same type as m
 func (r *Representation) Is(m protov2.Message) bool {
-	return r.Any().MessageIs(m)
+	return r.any().MessageIs(m)
 }
 
+// ToMessage unmarshals the representation into a new message of the underlying type
 func (r *Representation) ToMessage() (protov2.Message, error) {
-	return r.Any().UnmarshalNew()
+	return r.any().UnmarshalNew()
 }
 
-func (r Representation) MarshalTo(m protov2.Message) error {
-	return r.Any().UnmarshalTo(m)
-}
-func (r Representation) Name() protoreflect.FullName {
-	return r.Any().MessageName()
-}
-func (r Representation) Type() string {
-	return r.Any().TypeUrl
+// As unnmarshals the representation into m
+func (r Representation) To(m protov2.Message) error {
+	return r.any().UnmarshalTo(m)
 }
 
-// type Representation interface {
-// 	protov2.Message
-// }
+// Type returns the name of underlying proto message
+func (r Representation) Type() protoreflect.FullName {
+	return r.any().MessageName()
+}
+
+// URL returns the URL that identifies the underlying type
+func (r Representation) URL() string {
+	return r.any().TypeUrl
+}

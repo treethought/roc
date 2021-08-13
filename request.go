@@ -55,7 +55,7 @@ func (r *Request) AddArgument(name string, i Identifier) {
 }
 
 func (r *Request) SetArgumentByValue(name string, val Representation) {
-	log.Info("setting argument value", "arg", name, "type", val.Name())
-	r.m.ArgumentValues[name] = val.Representation.Value
+	log.Info("setting argument value", "arg", name, "type", val.Type())
+	r.m.ArgumentValues[name] = val.any()
 
 }

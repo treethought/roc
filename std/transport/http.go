@@ -54,9 +54,15 @@ func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	r := fmt.Sprintf("%+v", resp)
-	log.Info("returning response to http client", "response", r)
-	w.Write([]byte(r))
+	m := new(proto.String)
+	err = resp.MarshalTo(m)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.Info("returning response to http client", "response", m)
+	w.Write([]byte(m.GetValue()))
 
 }
 

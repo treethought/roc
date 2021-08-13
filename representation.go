@@ -58,8 +58,8 @@ func NewRepresentation(val interface{}) Representation {
 
 	switch v := val.(type) {
 
+	// unmarshal into the underlying remote type
 	case *anypb.Any:
-		log.Debug("REPRESENTATION IS ALREADY ANY, unmarshalling")
 		m, err := v.UnmarshalNew()
 		if err != nil {
 			log.Error("failed ot unmarshal new concreate any", "err", err)
@@ -67,8 +67,8 @@ func NewRepresentation(val interface{}) Representation {
 		}
 		msg = m
 
+		// just marshal the underlaying any into it's remote type
 	case *proto.Representation:
-		log.Debug("REPRESENTATION IS ALREADY *PROTO.REPRESENTATION, unmarshalling")
 		m, err := v.Value.UnmarshalNew()
 		if err != nil {
 			log.Error("failed ot unmarshal new concreate any", "err", err)
@@ -77,6 +77,7 @@ func NewRepresentation(val interface{}) Representation {
 		// return NewRepresentation(m)
 		msg = m
 
+		// unwrap to any and unmarshal to remote type, don't want nested Representations
 	case Representation:
 		log.Debug("representation is already representation, unmarshalling")
 		m, err := v.Any().UnmarshalNew()
@@ -88,19 +89,23 @@ func NewRepresentation(val interface{}) Representation {
 
 		return v
 
+		// already a message so we can create Any directly from it
 	case protov2.Message:
 		msg = v
-		log.Debug("REPRESENTATION IS ALREADY mESSAGE", "name", msg.ProtoReflect().Descriptor().Name())
 
+		// convert to proto msg
 	case string:
 		msg = &proto.String{Value: v}
 
+		// TODO:
 	case nil:
 		msg = &proto.Empty{}
 
+		// allow to return errors from endpoints
 	case error:
 		msg = &proto.ErrorMessage{Message: v.Error()}
 
+		// not sure what we have, create a new Struct proto msg
 	default:
 		log.Warn("creating representation with struct")
 		sval, err := structpb.NewValue(val)
@@ -118,7 +123,7 @@ func NewRepresentation(val interface{}) Representation {
 
 	}
 
-	log.Warn("created representation",
+	log.Info("created representation",
 		"from_type", reflect.TypeOf(val),
 		"any_url", any.TypeUrl,
 	)

@@ -97,7 +97,7 @@ func canResolve(ctx *RequestContext, e *proto.EndpointDefinition) bool {
 
 }
 
-func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
+func (s Space) Resolve(ctx *RequestContext) (EndpointDefinition, bool) {
 	for _, ed := range s.m.Endpoints {
 		log.Trace("interrogating endpoint",
 			"space", s.m.Identifier,
@@ -108,8 +108,8 @@ func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
 			log.Debug("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
-			c <- EndpointDefinition{ed}
-			// close(c)
+			return EndpointDefinition{ed}, true
 		}
 	}
+	return EndpointDefinition{}, false
 }

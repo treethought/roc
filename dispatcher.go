@@ -20,13 +20,18 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition 
 	log.Debug("resolving request", "identifier", ctx.Request().Identifier().String())
 
 	c := make(chan (EndpointDefinition))
-	for _, s := range ctx.m.Scope.Spaces {
-		log.Trace("checking space: ", "space", s.Identifier)
-		wrap := Space{s}
-		go wrap.Resolve(ctx, c)
-	}
+
+	go func() {
+		for _, s := range ctx.m.Scope.Spaces {
+			log.Trace("checking space: ", "space", s.Identifier)
+			wrap := Space{s}
+			ed, ok := wrap.Resolve(ctx)
+			if ok {
+				c <- ed
+			}
+		}
+	}()
 	ed := <-c
-	close(c)
 
 	return ed
 

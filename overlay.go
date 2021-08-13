@@ -34,37 +34,22 @@ func (e TransparentOverlay) Type() string {
 
 func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {
 	// transparent hook, cannot modify response
-	log.Warn("-------------------------------------")
+	log.Warn("overlay evaluating request", "identifier", ctx.Request().Identifier())
 
 	o.onRequest(ctx)
 
-	log.Info("overlay handling request", "identifier", ctx.Request().Identifier().String())
-
 	uri, err := ctx.GetArgumentValue("uri")
 	if err != nil {
-		log.Error("failed to source uri argument representation")
-		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		log.Error("failed to source uri argument representation", "err", err)
+		return err
 	}
-
-	log.Warn("OVERLAY GOT URI", "uri", uri)
 
 	m := new(proto.String)
 	err = uri.MarshalTo(m)
 	if err != nil {
-		log.Error("fialed to convert uri to string ")
+		log.Error("fialed to convert uri to string", "err", err)
 		return err
 	}
-
-	// if !uri.Is(&proto.String{}) {
-	// 	log.Error("uri was is not a string, convertying", "type", uri.Name().Name())
-	// }
-
-	// m := new(proto.HttpRequest)
-	// err = req.MarshalTo(m)
-	// if err != nil {
-	// 	log.Error("failed to marshal ARG representation to httpRequest", "err")
-	// 	return err
-	// }
 
 	// reformat the identifier for context of wrapped space
 	// build new res:// scheme from overlay prefix's root
@@ -85,12 +70,11 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {
 	resp, err := ctx.IssueRequest(req)
 	if err != nil {
 		log.Error("failed to issue request into wrapped space", "err", err)
-		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		return err
 	}
 
 	// transparent hook, cannot modify response
 	o.onResponse(ctx, resp)
-	log.Warn("-------------------------------------")
 
 	return resp
 }

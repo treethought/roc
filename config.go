@@ -2,7 +2,7 @@ package roc
 
 import "github.com/hashicorp/go-hclog"
 
-var LogLevel = hclog.Debug
+var LogLevel = hclog.Info
 
 type SystemConfig struct {
 	LogLevel string

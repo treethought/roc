@@ -46,10 +46,8 @@ func newTransientSpace(endpoints ...EndpointDefinition) Space {
 	return space
 }
 
-// https: //stackoverflow.com/questions/23030884/is-there-a-way-to-create-an-instance-of-a-struct-from-a-string
-
 func injectParsedArgs(ctx *RequestContext, e EndpointDefinition) {
-	log.Debug("injecting parsed arguments into request context")
+	log.Debug("injecting parsed grammar args")
 	args := e.grammar().Parse(ctx.Request().Identifier())
 
 	for k, v := range args {
@@ -57,7 +55,7 @@ func injectParsedArgs(ctx *RequestContext, e EndpointDefinition) {
 		// might want to change this
 		_, exists := ctx.Request().m.ArgumentValues[k]
 		if !exists {
-			log.Warn("setting grammar arg", "arg", k, "val", v[0])
+			log.Trace("injecting grammar argument ", "arg", k, "val", v[0])
 			rep := NewRepresentation(v[0])
 			ctx.Request().SetArgumentByValue(k, rep)
 		}
@@ -91,20 +89,21 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type)
 	log.Trace(fmt.Sprintf("%+v", ed))
 
-	if ed.Literal != nil {
-		log.Info("resolvied to literal endpoint",
-			"val", ed.Literal,
-			"type_url", ed.Literal.GetValue().TypeUrl,
-			"type", ed.Literal.ProtoReflect().Descriptor().FullName().Name(),
-			"id", ctx.Request().Identifier().String(),
-		)
+	// if ed.Literal != nil {
+	// 	log.Info("resolvied to literal endpoint",
+	// 		"val", ed.Literal,
+	// 		"type_url", ed.Literal.GetValue().TypeUrl,
+	// 		"type", ed.Literal.ProtoReflect().Descriptor().FullName().Name(),
+	// 		"id", ctx.Request().Identifier().String(),
+	// 	)
 
-	}
+	// }
 
+	// TODO have the type set correctly beforehand
 	// repr := Representation{ed.Literal}
 	// if repr.Is(&proto.HttpRequest{}) {
-	// 	log.Error("SETTING TYPE FOR HTTPREQUESt")
 	// 	ed.Type = EndpointTypeHTTPRequestAccessor
+	// 	log.Warn("set endpoint type based on representation", "type", ed.Type, "representation", repr.Name())
 	// }
 
 	injectParsedArgs(ctx, ed)
@@ -132,7 +131,6 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		endpoint = overlay
 
 	case EndpointTypeHTTPRequestAccessor:
-		log.Error("CREATING HTTPREQUEST ACCESSOR")
 		overlay := NewHttpRequestEndpoint(ed)
 		endpoint = overlay
 
@@ -146,8 +144,8 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		defer phys.Client.Kill()
 	}
 
-	log.Debug("evaluating request",
-		"identifier", ctx.Request().Identifier().String(),
+	log.Trace("evaluating request",
+		"identifier", ctx.Request().Identifier(),
 		"verb", ctx.Request().m.Verb,
 		"ed_type", ed.Type,
 	)
@@ -159,9 +157,8 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	// rep := endpoint.Source(ctx)
 	log.Info("dispatch received response",
 		"identifier", ctx.Request().Identifier().String(),
-		"representation", rep,
-		"type_name", repr.ProtoReflect().Descriptor().Name(),
-		"type_url", repr.GetValue().TypeUrl,
+		"representation", repr.Name(),
 	)
+	log.Trace(repr.Value.String())
 	return repr, nil
 }

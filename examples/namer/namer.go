@@ -41,12 +41,15 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) interface{} {
 
 	name, err := ctx.GetArgumentValue("nameArg")
 	if err != nil {
-		return roc.NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		log.Error("failed source nameArg value", "err", err)
+		return err
 	}
 
-	m, err := getAsString(name)
+	m := new(proto.String)
+	err = name.MarshalTo(m)
 	if err != nil {
-		return roc.NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		log.Error("failed to nameArg marshal to string", "err", err)
+		return err
 	}
 
 	return m

@@ -52,7 +52,7 @@ type Representation struct {
 }
 
 func NewRepresentation(val interface{}) Representation {
-	log.Debug("creating representation from", "type", reflect.TypeOf(val))
+	log.Trace("creating representation from", "type", reflect.TypeOf(val))
 
 	var msg protoreflect.ProtoMessage
 
@@ -107,7 +107,7 @@ func NewRepresentation(val interface{}) Representation {
 
 		// not sure what we have, create a new Struct proto msg
 	default:
-		log.Warn("creating representation with struct")
+		log.Warn("creating unknown representation as struct")
 		sval, err := structpb.NewValue(val)
 		if err != nil {
 			log.Error("failed to convert representation to proto struct")
@@ -123,12 +123,14 @@ func NewRepresentation(val interface{}) Representation {
 
 	}
 
-	log.Info("created representation",
-		"from_type", reflect.TypeOf(val),
-		"any_url", any.TypeUrl,
+	rep := Representation{Representation: &proto.Representation{Value: any}}
+
+	log.Debug("created representation",
+		"from", reflect.TypeOf(val),
+		"type", rep.Name(),
 	)
 
-	return Representation{Representation: &proto.Representation{Value: any}}
+	return rep
 }
 
 func (r *Representation) Any() *anypb.Any {

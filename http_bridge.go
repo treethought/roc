@@ -44,7 +44,7 @@ func NewHttpRequestMessage(req *http.Request) *proto.HttpRequest {
 }
 
 func NewHttpRequestDefinition(req *http.Request) EndpointDefinition {
-	log.Info("creating new httpRequest literal definition")
+	log.Debug("creating new httpRequest literal definition")
 
 	typeGroup := GroupElement{
 		GroupElement: &proto.GroupElement{
@@ -75,7 +75,6 @@ func NewHttpRequestDefinition(req *http.Request) EndpointDefinition {
 			Type:    EndpointTypeHTTPRequestAccessor,
 		},
 	}
-	log.Warn("created with httpRequest def with literal", "type", litRep.Name().Name())
 	return ed
 
 }
@@ -83,24 +82,20 @@ func NewHttpRequestDefinition(req *http.Request) EndpointDefinition {
 func NewHttpRequestEndpoint(ed EndpointDefinition) HttpRequestEndpoint {
 	rep := Representation{ed.Literal}
 
-	// any := ed.Literal.GetValue()
-	log.Warn("creating httpRequest literal endpoint for",
-		"any_url", rep.Type(),
-		"type_name", rep.Name().Name(),
+	log.Info("creating httpRequest accessor",
+		"type", rep.Name(),
 	)
 
 	if !rep.Is(&proto.HttpRequest{}) {
-		log.Error("http accessor definition literal is not httpRequest, trying to convert", "type", rep.Type())
+		log.Warn("http accessor definition literal is not httpRequest, trying to convert", "type", rep.Type())
 	}
 
 	m := new(proto.HttpRequest)
 	err := rep.MarshalTo(m)
 	if err != nil {
-		log.Error("failed to marshal representation to httpRequest")
+		log.Error("failed to marshal representation to httpRequest", "err", err)
 		panic(err)
 	}
-
-	log.Warn("CREATING HTTP REQUEST ENDPOINT")
 
 	return HttpRequestEndpoint{
 		BaseEndpoint: BaseEndpoint{},
@@ -110,11 +105,7 @@ func NewHttpRequestEndpoint(ed EndpointDefinition) HttpRequestEndpoint {
 }
 
 func (e HttpRequestEndpoint) Definition() EndpointDefinition {
-
 	repr := NewRepresentation(e.request)
-	log.Error("creating http request endpoint DEFI",
-		"type", repr.Type(),
-	)
 
 	return EndpointDefinition{
 		EndpointDefinition: &proto.EndpointDefinition{
@@ -135,7 +126,7 @@ func (e HttpRequestEndpoint) Type() string {
 }
 
 func (e HttpRequestEndpoint) Source(ctx *RequestContext) interface{} {
-	log.Error("sourcing httpRequest accessor")
+	log.Debug("sourcing httpRequest accessor")
 	return e.request
 
 	// part, err := ctx.GetArgumentValue("type")
@@ -166,53 +157,27 @@ func NewHTTPBridgeOverlay(ed EndpointDefinition) HttpBridgeOverlay {
 
 func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) interface{} {
 	// transparent hook, cannot modify response
-	log.Warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-	log.Info("getting httpRequest arg")
+	log.Warn("http bridge evaluating request", "identifier", ctx.Request().Identifier())
 
-	// reqId := fmt.Sprintf("httpRequest:%s", url)
 	req, err := ctx.GetArgumentValue("httpRequest")
 	if err != nil {
-		log.Error("failed to get requst representation")
-		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		log.Error("failed to get httpRequest representation", "err", err)
+		return err
 	}
-	log.Warn("received httpRequest arg representation",
-		"type", req.Name().Name(),
-		"type_url", req.Type(),
-	)
 
 	any := req.Representation.Value
-	log.Warn("converting arg value to httpRequest", "any_url", any.TypeUrl)
+	log.Debug("converting arg value to httpRequest", "any_url", any.TypeUrl)
 
 	if !req.Is(&proto.HttpRequest{}) {
-		log.Error("httprequest arg is not httpRequest, trying to convert", "type", req.Name().Name())
+		log.Warn("httprequest arg is not httpRequest, will try to convert", "type", req.Name().Name())
 	}
 
 	m := new(proto.HttpRequest)
 	err = req.MarshalTo(m)
 	if err != nil {
-		log.Error("failed to marshal ARG representation to httpRequest", "err")
+		log.Error("failed to marshal representation to httpRequest", "err", err)
 		return err
 	}
-
-	// httpReq, ok := req.(*http.Request)
-	// if !ok {
-	// 	log.Error("sourced value is not an http request")
-	// 	return fmt.Errorf("sourced value is not an http request")
-	// }
-
-	log.Info("got httpReqeuest arg", "class", any.GetTypeUrl())
-
-	// respId := fmt.Sprintf("httpResponse:%s", url)
-	// resp, err := ctx.GetArgumentValue("httpResponse")
-	// if err != nil {
-	// 	log.Error("failed to get response representation")
-	// 	return err
-	// }
-	// httpResp, ok = req.(http.ResponseWriter)
-	// if !ok {
-	// 	log.Error("sourced value is not an http response")
-	// 	return fmt.Errorf("sourced value is not an http response")
-	// }
 
 	// construct dynamic space for request and response
 
@@ -225,7 +190,9 @@ func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) interface{} {
 	}
 
 	log.Info("creating dynamic http request space")
-	reqAccessor := NewHttpRequestDefinition(httpReq)
+
+	httpDef := NewHttpRequestDefinition(httpReq)
+	reqAccessor := NewHttpRequestEndpoint(httpDef).Definition()
 
 	spaceID := NewIdentifier("space://http_bridge")
 	space := NewSpace(spaceID, reqAccessor)
@@ -244,7 +211,5 @@ func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) interface{} {
 		log.Error("failed to issue request into wrapped space", "err", err)
 		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
 	}
-	log.Warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-
 	return repr
 }

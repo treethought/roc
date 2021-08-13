@@ -18,25 +18,19 @@ type TransientEndpoint struct {
 }
 
 func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
-
-	// repProto, err := repToProto(NewRepresentation(rep))
-	// if err != nil {
-	// 	log.Error("failed to convert transient rep to proto", "err", err)
-	// }
-
 	uid := uuid.New()
 	uri := fmt.Sprintf("transient://%s", uid.String())
 
 	repr := Representation{rep}
-	any := repr.Any()
-	log.Debug("creating transient endpoint from representation",
-		"any_url", any.TypeUrl,
+	log.Debug("creating transient endpoint",
+		"type", repr.Name(),
 		"uri", uri,
-		// "lit_type", ed.Literal.ProtoReflect().Descriptor().Name(),
 	)
+	log.Trace(repr.Value.String())
 
 	grammar, err := NewGrammar(uri)
 	if err != nil {
+		log.Error("failed to create grammar", "err", err)
 		panic(err)
 	}
 
@@ -48,30 +42,11 @@ func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
 }
 
 func (e *TransientEndpoint) Definition() EndpointDefinition {
-	// repProto, err := repToProto(e.Representation)
-	// if err != nil {
-	// 	log.Error("failed to set transient endpoint definition literal", "err", err)
-	// 	panic(err)
-	// }
-
-	any := e.Representation.Any()
-	log.Debug("creating transient definition",
-		"any_url", any.TypeUrl,
-		"grammar", e.Grammar.String(),
-		"literal", e.Representation.Any().String(),
-
-		// "lit_type", ed.Literal.ProtoReflect().Descriptor().Name(),
-	)
-
-	// desc := e.Representation.ProtoReflect().Descriptor()
-	// m := dynamicpb.NewMessage(desc)
-
 	return EndpointDefinition{
 		EndpointDefinition: &proto.EndpointDefinition{
 			Name:    e.Grammar.String(),
 			Type:    EndpointTypeTransient,
 			Grammar: e.Grammar.m,
-			// TODO: repProto?
 			Literal: e.Representation.Representation,
 		},
 	}
@@ -88,18 +63,15 @@ func (e TransientEndpoint) Type() string {
 func (e TransientEndpoint) Source(ctx *RequestContext) interface{} {
 	log.Debug("sourcing transient endpoint",
 		"identifier", ctx.Request().Identifier(),
+		"type", e.Representation.Name(),
 	)
+	log.Trace(e.Representation.Value.String())
+
 	m, err := e.Representation.ToMessage()
 	if err != nil {
-		log.Error("failed to contruct concreate transient represent")
+		log.Error("failed to construct transient message", "err", err)
 		return err
 	}
-
-	log.Info("returning transient representation",
-		"type", m.ProtoReflect().Descriptor().FullName().Name(),
-		"identifier", e.Identifier().String(),
-		"gramar", e.Grammar.String(),
-	)
 
 	return m
 }

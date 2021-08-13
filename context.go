@@ -1,6 +1,8 @@
 package roc
 
 import (
+	"fmt"
+
 	"github.com/treethought/roc/proto"
 )
 
@@ -57,6 +59,7 @@ func (c *RequestContext) GetArgument(name string) Identifier {
 
 // GetArgumentValue sources the identifier of the named argument to obtain it's representation
 func (c *RequestContext) GetArgumentValue(name string) (Representation, error) {
+	log.Info("sourcing argument value", "name", name)
 	identifier := c.GetArgument(name)
 	if identifier.String() == "" {
 		log.Error("argument identifier is empty", "arg_name", name)
@@ -75,8 +78,6 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 	// create dynamic pass-by-value space to hold the representation
 	// we then provide the uri to the new dynamic endpoint as the arg value in the request
 
-	log.Debug("injecting argument value space")
-
 	defs := []EndpointDefinition{}
 
 	for k, val := range req.m.ArgumentValues {
@@ -85,10 +86,10 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 		rep := NewRepresentation(val)
 
 		pbvEndpoint := NewTransientEndpoint(rep.Representation)
+
 		log.Info("created transient pbv endpoint",
-			"arg", k, "val", val,
+			"arg", k, "type", rep.Name(),
 			"identifier", pbvEndpoint.Identifier(),
-			"type_url", val.TypeUrl,
 		)
 
 		// set the argument value to the pbv identifier
@@ -96,13 +97,16 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 		defs = append(defs, pbvEndpoint.Definition())
 	}
 
-	id := NewIdentifier("transient://")
-	valSpace := NewSpace(id, defs...)
-	c.InjectSpace(valSpace)
+	if len(defs) > 0 {
+		log.Info("injecting argument value space")
+		id := NewIdentifier(fmt.Sprintf("pbv://%s", req.Identifier().String()))
+		valSpace := NewSpace(id, defs...)
+		c.InjectSpace(valSpace)
+	}
 }
 
 func (c *RequestContext) IssueRequest(req *Request) (Representation, error) {
-	log.Debug("issuing new request", "identifier", req.Identifier().String())
+	log.Trace("issuing new request", "identifier", req.Identifier().String())
 
 	newReqCtx := NewRequestContext(req.Identifier(), c.Request().m.Verb)
 	newReqCtx.setRequest(req)

@@ -55,41 +55,7 @@ func (r *Request) AddArgument(name string, i Identifier) {
 }
 
 func (r *Request) SetArgumentByValue(name string, val Representation) {
-	// pRep, err := repToProto(val)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// msg, ok := val.ProtoReflect().(protoreflect.ProtoMessage)
-	// if !ok {
-	// 	log.Error("rep value is not protoflect message")
-	// }
-
-	// m, err := anypb.New(msg)
-	// if err != nil {
-	// 	log.Error("failed to convert agument value to any", "err", err)
-	// 	panic(err)
-	// }
-
-	log.Warn("setting argument value", "arg", name, "val_type", val.Any().TypeUrl)
+	log.Info("setting argument value", "arg", name, "type", val.Name())
 	r.m.ArgumentValues[name] = val.Representation.Value
 
 }
-
-// // Identifier returns the identifier of the requested resource
-// func (r Request) Identifier() Identifier {
-// 	return r.identifier
-// }
-
-// // Verb returns the specified action to be taken when evaluating the request
-// func (r Request) Verb() Verb {
-// 	return r.verb
-// }
-
-// func (r *Request) Headers() http.Header {
-// 	return r.headers
-// }
-
-// func (r Request) Arguments() url.Values {
-// 	return r.argmuments
-// }

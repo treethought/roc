@@ -28,14 +28,13 @@ type Evaluator interface {
 }
 
 func Evaluate(ctx *RequestContext, e Endpoint) interface{} {
-
 	// defer to endpoint's custom implementation if defined
 	defined, ok := e.(Evaluator)
 	if ok {
 		return defined.Evaluate(ctx)
 	}
 
-	log.Debug("using default evaluate handler")
+	log.Trace("using default evaluate handler")
 
 	// use default verb routing
 	switch ctx.Request().m.Verb {

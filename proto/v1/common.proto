@@ -1,0 +1,42 @@
+syntax = "proto3";
+package proto.v1;
+
+option go_package = "github.com/treethought/roc/proto/v1";
+
+
+// String is a simple message containing a string value
+message String {
+	string value = 1;
+}
+
+// StringSlice is a simple mesage wrapping a repeated string field
+message StringSlice {
+	repeated string values = 1;
+}
+
+// ErrorMessage represents a standard format of errors
+// These may be returned from endpoints as a representation
+message ErrorMessage {
+	string message = 1;
+}
+
+// IdentifierResponse presents a string value that is an Identifier
+message IdentifierResponse {
+	string value = 1;
+}
+
+// BoolResponse contains a single boolean value
+message BoolResponse {
+	bool value = 1;
+}
+
+// MapField is a mapping of a key to a list of string values
+// this is typically used in repeated form and can be used as a golang map
+message MapField {
+	string key = 1;
+	repeated string value = 2;
+
+}
+
+// Empty is a message with no fields
+message Empty {}

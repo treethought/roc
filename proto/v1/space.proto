@@ -1,0 +1,40 @@
+syntax = "proto3";
+package proto.v1;
+
+option go_package = "github.com/treethought/roc/proto/v1";
+
+import "proto/v1/representation.proto";
+import "proto/v1/grammar.proto";
+
+// EndpointDefinition represents the binding of a logical
+// endpont to it's physical implementation.*/
+// The implementation may a command for an accessor or a literal representation */
+message EndpointDefinition {
+	// name is a friendly name of the endpoint
+	string name   = 1; 
+	proto.v1.Grammar grammar = 2;
+	string cmd = 3;
+	string type = 4;
+	proto.v1.Representation literal = 5;
+
+	// TODO generalize endpoint def for any endpoint/prototype
+
+	Space space = 6;
+	string  regex = 7;
+}
+
+// A Space represents an address space of resources.
+// The resources of a space are composed of physical endpoints, which
+// evaluate requests issued into a space.
+// The physical endpoints within a space are logically bound to the space
+// via their grammar.
+// Requests are issued into a Space which resolves the request to an endpoint
+// using it's grammar.
+// Spaces are conidered dynamic and may be created during requests (overlays) or
+// defer request evaluating to other imported address spaces
+message Space {
+	string identifier = 1;
+	repeated Space imports = 2;
+	repeated EndpointDefinition endpoints = 3 [json_name="endpoints"];
+}
+

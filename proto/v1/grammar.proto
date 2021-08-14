@@ -1,0 +1,49 @@
+syntax = "proto3";
+package proto.v1;
+
+option go_package = "github.com/treethought/roc/proto/v1";
+
+
+// An ActiveElement is used to define an Active grammar.
+// by convention an active identifier uses the active: scheme.
+// Acive identifiers are best used for endpoints like services
+// with functional behavior.
+// An active elemet's arguments are themselves resource identifiers,
+// meaning they may be nested, forming functional programs.
+message ActiveElement {
+	string identifier = 1;
+	repeated string argmuents = 2;
+}
+
+// An ActiveArgument is an argument to parsed from the active identier
+// and provided to the endpint. The values provided for named arguments
+// are to be resource identifiers which may be sourced for value representaions
+// during evaluation.
+message ActiveArgument {
+	string name = 1;
+	uint64 min = 2;
+	uint64 max = 3;
+	string desc = 4;
+}
+
+// A GroupElement defines segements of an Identifier token.
+// GroupElements are matched against substrings of an Identifier via their regex
+// and are parsed and provided as arguments in the RequestContext during request evaluation.
+// Groups may also be used in the construction of a resource identifier
+message GroupElement {
+	string name = 1;
+	uint64 min = 2;
+	uint64 max = 3;
+	string regex = 5;
+}
+
+// A Grammar represents the pattern from which identifiers may be parsed into arguments and matched to endpoints.
+// A Grammar is what binds a physical level Endpoint into it's logical addres Space.
+// Spaces may use Grammars to resolve requests to an endpoint, or endpoints may be asked
+// themselves to use their own grammar to determine if they can resolve a request.
+// Grammars are bidirectional, meaning they can also construct an Identifier from their idividual parts
+message Grammar {
+	string base = 1;
+	repeated GroupElement groups = 2;
+}
+

@@ -1,0 +1,57 @@
+syntax = "proto3";
+package proto.v1;
+
+option go_package = "github.com/treethought/roc/proto/v1";
+
+import "google/protobuf/any.proto";
+import "proto/v1/common.proto";
+
+
+enum Verb {
+	VERB_UNSPECIFIED = 0;
+	// Source retrieves representation of resource
+	VERB_SOURCE = 1;
+
+	// Sink updates resource to reflect representation
+	VERB_SINK = 2;
+
+	// Exists tests to see if resource can be resolved and exists
+	VERB_EXISTS = 3;
+
+	// Delete remove the resource from the space that currently contains it
+	VERB_DELETE = 4;
+
+	// New creates a resource and return identifier for created resource
+	// If primary representation is included, use it to initialize resource state
+	VERB_NEW = 5;
+
+	// Transrept converts primary representation into an alternate representation
+	// specified by required representation field in the request
+	VERB_TRANSREPT = 6;
+
+	// Resolve performs resolution on the request passed as the primary representation
+	VERB_RESOLVE = 7;
+
+	// Meta retrieves a meta data representation for the identified space or space element
+	VERB_META = 8;
+}
+
+
+
+// Request is issued by a requestor to interact with a resource.
+// A request is issued into a space and resolved to an endpoint.
+// As a result of evaluating a request a representation of a resource is returned,
+// as the specified representation class
+message Request {
+  string identifier = 1;
+  Verb verb = 2;
+  string representation_class = 3;
+  map<string, proto.v1.StringSlice> arguments = 4;
+  map<string, proto.v1.StringSlice> headers = 5;
+  /* google.protobuf.Struct argument_values = 6; */
+  map<string, google.protobuf.Any> argument_values = 6;
+  /* repeated MapField arguments  = 4; */
+  /* repeated MapField headers  = 5; */
+}
+
+

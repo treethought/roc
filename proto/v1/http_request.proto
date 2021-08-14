@@ -1,7 +1,7 @@
 syntax = "proto3";
-package proto;
+package proto.v1;
 
-option go_package = "github.com/treethought/roc/proto";
+option go_package = "github.com/treethought/roc/proto/v1";
 
 
 // taken from https://github.com/googleapis/googleapis/blob/master/google/logging/type/http_request.proto

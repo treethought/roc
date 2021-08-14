@@ -1,7 +1,7 @@
 package roc
 
 import (
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

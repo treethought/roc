@@ -2,7 +2,7 @@ package roc
 
 import (
 	plugin "github.com/hashicorp/go-plugin"
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 	"golang.org/x/net/context"
 )
 

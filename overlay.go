@@ -3,7 +3,7 @@ package roc
 import (
 	"fmt"
 
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 var EndpointTypeTransparentOverlay = "transparentOverlay"

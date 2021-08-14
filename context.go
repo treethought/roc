@@ -3,7 +3,7 @@ package roc
 import (
 	"fmt"
 
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 type RequestScope struct {
@@ -36,7 +36,7 @@ func (c *RequestContext) setRequest(req *Request) {
 
 // CreateRequest returns a new request that can be issued to obtain resources or use services
 func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
-	return NewRequest(identifier, proto.Verb_Source, "")
+	return NewRequest(identifier, proto.Verb_VERB_SOURCE, "")
 }
 
 // InjectSpace adds the given space to the request scope

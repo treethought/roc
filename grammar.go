@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 // https://mixedanalytics.com/blog/regex-match-number-subdirectories-url/

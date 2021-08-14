@@ -5,7 +5,7 @@ import (
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -38,16 +38,16 @@ func Evaluate(ctx *RequestContext, e Endpoint) interface{} {
 
 	// use default verb routing
 	switch ctx.Request().m.Verb {
-	case proto.Verb_Source:
+	case proto.Verb_VERB_SOURCE:
 		return e.Source(ctx)
-	case proto.Verb_Sink:
+	case proto.Verb_VERB_SINK:
 		e.Sink(ctx)
 		return NewRepresentation(nil)
-	case proto.Verb_New:
+	case proto.Verb_VERB_NEW:
 		return NewRepresentation(e.New(ctx))
-	case proto.Verb_Delete:
+	case proto.Verb_VERB_DELETE:
 		return NewRepresentation(&proto.BoolResponse{Value: e.Delete(ctx)})
-	case proto.Verb_Exists:
+	case proto.Verb_VERB_EXISTS:
 		return NewRepresentation(&proto.BoolResponse{Value: e.Exists(ctx)})
 
 	default:

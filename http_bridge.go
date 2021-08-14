@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 var EndpointTypeHTTPRequestAccessor = "accessor:std"

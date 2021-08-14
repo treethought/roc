@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 const EndpointTypeTransient string = "transient"

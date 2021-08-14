@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 type Kernel struct {
@@ -129,6 +129,6 @@ func (k *Kernel) Receiver() chan (*RequestContext) {
 }
 
 func (k Kernel) buildResolveRequestContext(request *Request) *RequestContext {
-	return NewRequestContext(request.Identifier(), proto.Verb_Resolve)
+	return NewRequestContext(request.Identifier(), proto.Verb_VERB_RESOLVE)
 
 }

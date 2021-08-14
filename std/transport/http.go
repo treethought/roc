@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/treethought/roc"
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -35,7 +35,7 @@ func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
 	identifier := roc.NewIdentifier(fmt.Sprintf("http:/%s", req.URL.String()))
 	log.Info("transport received request", "identifier", identifier, "url", req.URL.String())
 
-	ctx := roc.NewRequestContext(identifier, proto.Verb_Source)
+	ctx := roc.NewRequestContext(identifier, proto.Verb_VERB_SOURCE)
 
 	// create dynamic httpRequest accessor that will provide acess to http request
 	// rep := roc.NewHttpRequestDefinition(req)

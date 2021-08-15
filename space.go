@@ -23,36 +23,13 @@ type Space struct {
 	m *proto.Space
 }
 
-type EndpointDefinition struct {
-	*proto.EndpointDefinition
-}
-
-// func (ed EndpointDefinition) Type() string {
-// 	return ed.EndpointType
-// }
-
-func (ed *EndpointDefinition) grammar() Grammar {
-	elems := []GroupElement{}
-	for _, g := range ed.Grammar.Groups {
-		elems = append(elems, GroupElement{g})
-	}
-	g, err := NewGrammar(ed.Grammar.Base, elems...)
-	if err != nil {
-		panic(err)
-	}
-	g.m.Active = ed.Grammar.Active
-	return g
-}
-
-func NewSpace(identifier Identifier, endpoints ...EndpointDefinition) Space {
+func NewSpace(identifier Identifier, endpoints ...*proto.EndpointDefinition) Space {
 	s := Space{
 		m: &proto.Space{
 			Identifier: identifier.String(),
 			Imports:    []*proto.Space{},
+			Endpoints:  endpoints,
 		},
-	}
-	for _, e := range endpoints {
-		s.m.Endpoints = append(s.m.Endpoints, e.EndpointDefinition)
 	}
 
 	log.Debug("created space", "identifier", s.m.Identifier, "endpoints", len(s.m.Endpoints))
@@ -91,14 +68,11 @@ func canResolve(ctx *RequestContext, e *proto.EndpointDefinition) bool {
 		return false
 	}
 
-	ed := EndpointDefinition{e}
-
-	resolve := ed.grammar().Match(NewIdentifier(ctx.Request().m.Identifier))
-	return resolve
+	return matchGrammar(e.Grammar, ctx.m.Request.Identifier)
 
 }
 
-func (s Space) Resolve(ctx *RequestContext) (EndpointDefinition, bool) {
+func (s Space) Resolve(ctx *RequestContext) (*proto.EndpointDefinition, bool) {
 	for _, ed := range s.m.Endpoints {
 		log.Trace("interrogating endpoint",
 			"space", s.m.Identifier,
@@ -109,8 +83,8 @@ func (s Space) Resolve(ctx *RequestContext) (EndpointDefinition, bool) {
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
 			log.Debug("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
-			return EndpointDefinition{ed}, true
+			return ed, true
 		}
 	}
-	return EndpointDefinition{}, false
+	return &proto.EndpointDefinition{}, false
 }

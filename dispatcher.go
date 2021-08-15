@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 type Dispatcher interface {
@@ -16,10 +17,10 @@ func NewCoreDispatcher() *CoreDispatcher {
 	return &CoreDispatcher{}
 }
 
-func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition {
+func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointDefinition {
 	log.Debug("resolving request", "identifier", ctx.Request().Identifier().String())
 
-	c := make(chan (EndpointDefinition))
+	c := make(chan (*proto.EndpointDefinition))
 
 	go func() {
 		for _, s := range ctx.m.Scope.Spaces {
@@ -37,7 +38,7 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition 
 
 }
 
-func newTransientSpace(endpoints ...EndpointDefinition) Space {
+func newTransientSpace(endpoints ...*proto.EndpointDefinition) Space {
 	uid := uuid.New()
 	spaceID := fmt.Sprintf("dynamic-space://%s", uid.String())
 
@@ -46,9 +47,9 @@ func newTransientSpace(endpoints ...EndpointDefinition) Space {
 	return space
 }
 
-func injectParsedArgs(ctx *RequestContext, e EndpointDefinition) {
-	log.Debug("injecting parsed grammar args")
-	args := e.grammar().Parse(ctx.Request().Identifier())
+func injectParsedArgs(ctx *RequestContext, e *proto.EndpointDefinition) {
+	args := parseGrammar(e.Grammar, ctx.Request().Identifier().String())
+	log.Debug("injecting parsed grammar args", "args", args)
 
 	for k, v := range args {
 		// TODO: not overwriting arguments already added to the request

@@ -1,7 +1,6 @@
 package roc
 
 import (
-	"net/url"
 	"regexp"
 	"strings"
 
@@ -14,57 +13,22 @@ import (
 // 	"path-segment": regexp.MustCompile("^[^/]+/[^/]+[a-zA-Z0-9]$"),
 // }
 
-type grammar interface {
-	ParseArguments(Identifier) map[string][]string
-	Construct() Identifier
-	Match(Identifier) bool
-}
-
-type Grammar struct {
-	m   *proto.Grammar
-	uri *url.URL
-}
-
-func NewGrammar(base string, elems ...GroupElement) (Grammar, error) {
-	uri, err := url.Parse(base)
-	if err != nil {
-		log.Error(err.Error())
-		return Grammar{}, err
-	}
-
-	grammar := Grammar{
-		m: &proto.Grammar{
-			Base:   uri.String(),
-			Groups: []*proto.GroupElement{},
-		},
-		uri: uri,
-	}
-
-	for _, g := range elems {
-		grammar.m.Groups = append(grammar.m.Groups, g.GroupElement)
-	}
-
-	return grammar, nil
-}
-
-func (g Grammar) String() string {
-	if g.uri == nil {
-		return ""
-	}
-	return g.uri.String()
-}
-
-func (g Grammar) Parse(i Identifier) (args map[string][]string) {
+// parseGrammar returns the group or active arguments from an identifier
+func parseGrammar(g *proto.Grammar, i string) (args map[string][]string) {
+	log.Trace("parsing grammar", "grammar", g, "identitifier", i)
 	args = make(map[string][]string)
-	if g.m.Active != nil {
-		return parseActive(g.m.Active, i.String())
+	if g == nil {
+		log.Error("grammar was nil")
+		return args
 	}
 
-	for _, group := range g.m.Groups {
+	if g.Active != nil {
+		return parseActive(g.Active, i)
 
-		wrap := GroupElement{group}
+	}
 
-		for k, v := range wrap.Parse(g, i) {
+	for _, group := range g.GetGroups() {
+		for k, v := range parseGroupElement(group, i) {
 			_, exists := args[k]
 			if exists {
 				args[k] = append(args[k], v...)
@@ -77,72 +41,71 @@ func (g Grammar) Parse(i Identifier) (args map[string][]string) {
 	return args
 }
 
-func (g Grammar) Match(i Identifier) bool {
-	log.Trace("checking grammar",
-		"grammar", g.String(),
-		"identitifier", i.String(),
+func matchGrammar(g *proto.Grammar, i string) bool {
+	log.Trace("matching grammar",
+		"grammar", g.GetBase(),
+		"identitifier", i,
 	)
 
-	if !strings.HasPrefix(i.String(), g.m.GetBase()) {
+	if !strings.HasPrefix(i, g.GetBase()) {
+		log.Trace("identifier does not start with base", "id", i, "g", g.GetBase())
 		return false
 	}
 
-	if len(g.m.GetActive().GetArguments()) > 0 {
-		return matchActive(g.m.Active, i.String())
-	}
-
-	for _, p := range g.m.Groups {
-		wrap := GroupElement{p}
-		if !wrap.Match(g, i) {
+	for _, p := range g.Groups {
+		if !matchGroupElement(p, i) {
 			log.Trace("group does not match", "group", p.Name)
 			return false
 		}
 	}
 
+	if len(g.GetActive().GetArguments()) > 0 {
+		if !matchActive(g.Active, i) {
+			log.Debug("active element does not match", "active", g.Active)
+			return false
+		}
+	}
+
 	log.Trace("grammar matches",
-		"grammar", g.uri.String(),
+		"grammar", g.Base,
 		"identifier", i,
 	)
 
 	return true
 }
 
-type grammarElement struct {
-	values []string
-}
-
-// groupElement defines segments of an identifier token
-type GroupElement struct {
-	*proto.GroupElement
-}
-
-func (e GroupElement) Match(g Grammar, i Identifier) bool {
+func matchGroupElement(g *proto.GroupElement, i string) bool {
 	log.Trace("performing match on grammar group element")
-	part := strings.Replace(i.String(), g.m.Base, "", 1)
-	if e.Regex != "" {
-		rx, err := regexp.Compile(e.Regex)
+	// TODO remove base before passing to this func
+	// part := strings.Replace(i, g.Base, "", 1)
+	if g.GetRegex() != "" {
+		rx, err := regexp.Compile(g.Regex)
 		if err != nil {
-			log.Error("regex invalid", "regex", e.Regex, "err", err)
+			log.Error("regex invalid", "regex", g.Regex, "err", err)
 			return false
 		}
-		if rx.MatchString(part) {
-			log.Debug("grammar group regex match", "regex", e.Regex, "identifier", i)
+		if rx.MatchString(i) {
+			log.Debug("grammar group regex match", "regex", g.Regex, "identifier", i)
 			return true
 		}
 	}
 	return false
 }
 
-func (e GroupElement) Parse(g Grammar, i Identifier) (args map[string][]string) {
+func parseGroupElement(g *proto.GroupElement, i string) (args map[string][]string) {
+	log.Trace("parsing group element")
 	args = make(map[string][]string)
-	parts := strings.Replace(i.String(), g.m.Base, "", 1)
-	if e.Regex != "" {
-		rx := regexp.MustCompile(e.Regex)
-		matches := rx.FindAllString(parts, -1)
-		args[e.Name] = matches
+	// TODO remove base before passing to this func
+	// parts := strings.Replace(i, g.m.Base, "", 1)
+	if g.Regex != "" {
+		rx := regexp.MustCompile(g.Regex)
+		matches := rx.FindAllString(i, -1)
+		args[g.Name] = matches
 	}
 	return args
 }
+
+// active:toUpper+operand@file:/example.txt
 
 func matchActive(a *proto.ActiveElement, i string) bool {
 	log.Debug("performing match on active element")
@@ -152,7 +115,7 @@ func matchActive(a *proto.ActiveElement, i string) bool {
 }
 
 func parseActive(a *proto.ActiveElement, i string) (args map[string][]string) {
-	log.Debug("parsing active grammar")
+	log.Trace("parsing active grammar")
 	args = make(map[string][]string)
 	regex := `\+(?P<name>[^@]+)@(?P<value>[^\+]+)`
 	rx := regexp.MustCompile(regex)

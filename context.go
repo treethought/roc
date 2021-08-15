@@ -78,7 +78,7 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 	// create dynamic pass-by-value space to hold the representation
 	// we then provide the uri to the new dynamic endpoint as the arg value in the request
 
-	defs := []EndpointDefinition{}
+	defs := []*proto.EndpointDefinition{}
 
 	for k, val := range req.m.ArgumentValues {
 		// create pbv endpoint to hold representation
@@ -98,7 +98,7 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 	}
 
 	if len(defs) > 0 {
-		log.Info("injecting argument value space")
+		log.Debug("injecting argument value space")
 		id := NewIdentifier(fmt.Sprintf("pbv://%s", req.Identifier().String()))
 		valSpace := NewSpace(id, defs...)
 		c.InjectSpace(valSpace)

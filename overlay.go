@@ -14,15 +14,17 @@ type Overlay interface {
 
 type TransparentOverlay struct {
 	BaseEndpoint
+	grammar    *proto.Grammar
 	Space      *proto.Space
 	onRequest  func(ctx *RequestContext)
 	onResponse func(ctx *RequestContext, resp Representation)
 }
 
-func NewTransparentOverlay(ed EndpointDefinition) TransparentOverlay {
+func NewTransparentOverlay(ed *proto.EndpointDefinition) TransparentOverlay {
 	return TransparentOverlay{
 		BaseEndpoint: BaseEndpoint{},
 		Space:        ed.Space,
+		grammar:      ed.Grammar,
 		onRequest:    func(ctx *RequestContext) {},
 		onResponse:   func(ctx *RequestContext, resp Representation) {},
 	}

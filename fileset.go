@@ -12,20 +12,16 @@ const EndpointTypeFileset string = "fileset"
 type Fileset struct {
 	BaseEndpoint
 	Regex   string
-	grammar Grammar
+	grammar *proto.Grammar
 	Mutable bool
 }
 
 func NewFilesetRegex(rx string) Fileset {
-	grammar, err := NewGrammar(rx, GroupElement{
-		GroupElement: &proto.GroupElement{
-			Regex: rx,
-			Name:  "regex",
+	grammar := &proto.Grammar{
+		Base: rx,
+		Groups: []*proto.GroupElement{
+			{Regex: rx, Name: "regex"},
 		},
-	})
-	if err != nil {
-		// log.Error(err)
-		panic(err)
 	}
 
 	return Fileset{
@@ -35,30 +31,29 @@ func NewFilesetRegex(rx string) Fileset {
 	}
 }
 
-func (f Fileset) Grammar() Grammar {
-	if f.grammar.m.Base != "" {
+func (f Fileset) Grammar() *proto.Grammar {
+	if f.grammar.Base != "" {
 		return f.grammar
 	}
+
 	if f.Regex != "" {
-		g, _ := NewGrammar(f.Regex, GroupElement{
-			GroupElement: &proto.GroupElement{
-				Regex: f.Regex,
-				Name:  "regex",
+		grammar := &proto.Grammar{
+			Base: f.Regex,
+			Groups: []*proto.GroupElement{
+				{Regex: f.Regex, Name: "regex"},
 			},
-		})
-		return g
+		}
+		return grammar
 	}
-	return Grammar{}
+	return &proto.Grammar{}
 
 }
 
-func (e Fileset) Definition() EndpointDefinition {
-	return EndpointDefinition{
-		EndpointDefinition: &proto.EndpointDefinition{
-			Name:    e.Grammar().String(),
-			Type:    EndpointTypeFileset,
-			Grammar: e.Grammar().m,
-		},
+func (e Fileset) Definition() *proto.EndpointDefinition {
+	return &proto.EndpointDefinition{
+		Name:    e.Grammar().GetBase(),
+		Type:    EndpointTypeFileset,
+		Grammar: e.Grammar(),
 	}
 }
 

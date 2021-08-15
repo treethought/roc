@@ -13,7 +13,7 @@ const EndpointTypeTransient string = "transient"
 // these are typically used for internal temporary resources.
 type TransientEndpoint struct {
 	BaseEndpoint
-	Grammar        Grammar `yaml:"grammar,omitempty"`
+	Grammar        *proto.Grammar `yaml:"grammar,omitempty"`
 	Representation Representation
 }
 
@@ -28,11 +28,7 @@ func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
 	)
 	log.Trace(repr.String())
 
-	grammar, err := NewGrammar(uri)
-	if err != nil {
-		log.Error("failed to create grammar", "err", err)
-		panic(err)
-	}
+	grammar := &proto.Grammar{Base: uri}
 
 	return TransientEndpoint{
 		BaseEndpoint:   BaseEndpoint{},
@@ -41,19 +37,17 @@ func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
 	}
 }
 
-func (e *TransientEndpoint) Definition() EndpointDefinition {
-	return EndpointDefinition{
-		EndpointDefinition: &proto.EndpointDefinition{
-			Name:    e.Grammar.String(),
-			Type:    EndpointTypeTransient,
-			Grammar: e.Grammar.m,
-			Literal: e.Representation.message(),
-		},
+func (e *TransientEndpoint) Definition() *proto.EndpointDefinition {
+	return &proto.EndpointDefinition{
+		Name:    e.Grammar.GetBase(),
+		Type:    EndpointTypeTransient,
+		Grammar: e.Grammar,
+		Literal: e.Representation.message(),
 	}
 }
 
 func (e *TransientEndpoint) Identifier() Identifier {
-	return NewIdentifier(e.Grammar.String())
+	return NewIdentifier(e.Grammar.GetBase())
 }
 
 func (e TransientEndpoint) Type() string {

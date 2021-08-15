@@ -52,6 +52,14 @@ spaces:
               grammar:
                 base: "res://exposed"
 
+            - name: docs
+              type: fileset
+              grammar:
+                base: "res:/doc/"
+                groups:
+                  - name: path
+                    regex: ".*"
+
             # am overlay mapping to a set of resources
             # that can do things based on roc request/response
             - name: overlaytest

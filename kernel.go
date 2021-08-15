@@ -123,12 +123,3 @@ func (k *Kernel) Register(spaces ...*proto.Space) {
 		k.logger.Info("registered spaces", "size", len(spaces))
 	}
 }
-
-func (k *Kernel) Receiver() chan (*RequestContext) {
-	return k.receiver
-}
-
-func (k Kernel) buildResolveRequestContext(request *Request) *RequestContext {
-	return NewRequestContext(request.Identifier(), proto.Verb_VERB_RESOLVE)
-
-}

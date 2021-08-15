@@ -27,11 +27,24 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) interface{} {
 		log.Error("failed source value", "err", err)
 		return err
 	}
-
 	s := new(proto.String)
 	err = value.To(s)
 	if err != nil {
 		return err
+	}
+
+	// TODO better identifier parsing, and handle this with GetArgumentValue
+	if strings.Contains(s.GetValue(), ":/") {
+		valRep, err := ctx.Source(roc.NewIdentifier(s.GetValue()), "")
+		if err != nil {
+			log.Error("failed to source upper identifier")
+			return err
+		}
+		s = new(proto.String)
+		err = valRep.To(s)
+		if err != nil {
+			return err
+		}
 	}
 
 	return strings.ToUpper(s.Value)

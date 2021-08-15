@@ -57,18 +57,18 @@ spaces:
             - name: overlaytest
               type: transparentOverlay
               grammar:
-                base: "res://app/"
+                base: "res:/app/"
                 # TODO abstract this away
                 groups:
                   - name: uri
                     regex: ".*"
               space:
-                identifier: space://my-wrapped
+                identifier: space:/my-wrapped
                 endpoints:
                   - name: greeter
                     type: accessor
                     grammar:
-                      base: res://hello/
+                      base: res:/hello/
                       groups:
                         - name: name
                           regex: ".*"
@@ -79,7 +79,7 @@ spaces:
                     cmd: ./bin/upper
                     grammar:
                       active:
-                        identifier: res://active:toUpper
+                        identifier: res:/active:toUpper
                         arguments:
                           - name: value
                             min: 1
@@ -87,7 +87,7 @@ spaces:
                   - name: myfiles
                     type: fileset
                     grammar:
-                      base: "res://std/"
+                      base: "res:/std/"
                       groups:
                         - name: path
                           regex: ".*"

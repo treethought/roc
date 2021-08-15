@@ -58,7 +58,7 @@ func (e Fileset) Definition() *proto.EndpointDefinition {
 }
 
 func (e Fileset) Source(ctx *RequestContext) interface{} {
-	path := strings.Replace(ctx.Request().Identifier().String(), "res://", "", 1)
+	path := strings.Replace(ctx.Request().Identifier().String(), "res:/", "", 1)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})

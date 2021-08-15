@@ -189,7 +189,7 @@ func (o HttpBridgeOverlay) Evaluate(ctx *RequestContext) interface{} {
 	space := NewSpace(spaceID, reqAccessor)
 	ctx.InjectSpace(space)
 
-	identifier := NewIdentifier(fmt.Sprintf("res:/%s", httpReq.URL.Path))
+	identifier := NewIdentifier(fmt.Sprintf("res:%s", httpReq.URL.Path))
 
 	log.Info("mapped http request to identifier", "identifier", identifier)
 

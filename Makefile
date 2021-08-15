@@ -7,8 +7,8 @@ build-cli:
 	go build -o ./roc ./cmd/...
 
 clean:
-	rm proto/*.go || true
-	rm -rf bin/*
+	rm proto/v1/*.go || true
+	rm -rf bin/*|| true
 
 build:
 	go build -o ./bin/ ./examples/...
@@ -26,4 +26,4 @@ protos: clean
 start:
 	go run cmd/main.go run -c examples/config.yaml
 
-run: build start
+run: protos build start

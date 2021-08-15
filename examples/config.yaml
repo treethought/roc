@@ -78,10 +78,11 @@ spaces:
                     type: accessor
                     cmd: ./bin/upper
                     grammar:
-                      base: res://toUpper/
-                      groups:
-                        - name: value
-                          regex: ".*"
+                      active:
+                        identifier: res://active:toUpper
+                        arguments:
+                          - name: value
+                            min: 1
 
                   - name: myfiles
                     type: fileset

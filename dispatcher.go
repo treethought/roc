@@ -83,6 +83,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		"identifier", ctx.Request().Identifier().String(),
 		"scope_size", len(ctx.m.Scope.Spaces),
 		"verb", ctx.Request().m.Verb,
+		"arguments", ctx.Request().m.Arguments,
 	)
 
 	ed := d.resolveEndpoint(ctx)

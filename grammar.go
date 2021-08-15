@@ -56,6 +56,9 @@ func (g Grammar) String() string {
 
 func (g Grammar) Parse(i Identifier) (args map[string][]string) {
 	args = make(map[string][]string)
+	if g.m.Active != nil {
+		return parseActive(g.m.Active, i.String())
+	}
 
 	for _, group := range g.m.Groups {
 
@@ -79,26 +82,13 @@ func (g Grammar) Match(i Identifier) bool {
 		"grammar", g.String(),
 		"identitifier", i.String(),
 	)
-	log.Trace("parsing identitifier", "identifier", i.String())
-	uri, err := url.Parse(i.String())
-	if err != nil {
-		log.Error("failed to parse identifier",
-			"identifier", i,
-			"error", err,
-		)
+
+	if !strings.HasPrefix(i.String(), g.m.GetBase()) {
 		return false
 	}
 
-	log.Trace("checking scheme", "uri_scheme", uri.Scheme, "grammar_scheme", g.uri.Scheme)
-	if uri.Scheme != g.uri.Scheme {
-		log.Trace("scheme does not match")
-		return false
-	}
-
-	log.Trace("checking host", "uri_host", uri.Host, "grammar_host", g.uri.Host)
-	if uri.Host != g.uri.Host {
-		log.Trace("host does not match")
-		return false
+	if len(g.m.GetActive().GetArguments()) > 0 {
+		return matchActive(g.m.Active, i.String())
 	}
 
 	for _, p := range g.m.Groups {
@@ -109,12 +99,6 @@ func (g Grammar) Match(i Identifier) bool {
 		}
 	}
 
-	// log.Info("checking path", "uri_path", uri.Path, "grammar_path", g.uri.Path)
-	// if !(strings.HasPrefix(uri.Path, g.uri.Path)) {
-	// 	// if uri.Path != g.uri.Path {
-	// 	log.Info("path does not match")
-	// 	return false
-	// }
 	log.Trace("grammar matches",
 		"grammar", g.uri.String(),
 		"identifier", i,
@@ -133,7 +117,7 @@ type GroupElement struct {
 }
 
 func (e GroupElement) Match(g Grammar, i Identifier) bool {
-	log.Debug("performing match grammar group element")
+	log.Trace("performing match on grammar group element")
 	part := strings.Replace(i.String(), g.m.Base, "", 1)
 	if e.Regex != "" {
 		rx, err := regexp.Compile(e.Regex)
@@ -160,10 +144,29 @@ func (e GroupElement) Parse(g Grammar, i Identifier) (args map[string][]string) 
 	return args
 }
 
-type optionalGroup struct {
-	text string
+func matchActive(a *proto.ActiveElement, i string) bool {
+	log.Debug("performing match on active element")
+	regex := `\+(?P<name>[^@]+)@(?P<value>[^\+]+)`
+	rx := regexp.MustCompile(regex)
+	return rx.MatchString(i)
 }
 
-type choiceElement struct {
-	groups []GroupElement
+func parseActive(a *proto.ActiveElement, i string) (args map[string][]string) {
+	log.Debug("parsing active grammar")
+	args = make(map[string][]string)
+	regex := `\+(?P<name>[^@]+)@(?P<value>[^\+]+)`
+	rx := regexp.MustCompile(regex)
+	matches := rx.FindAllStringSubmatch(i, -1)
+
+	// TODO fix nested active - prbly include base in regex
+	for _, m := range matches {
+		name, val := m[1], m[2]
+		log.Debug("parsed active arg", "name", m[1], "val", m[2])
+		_, ok := args[name]
+		if !ok {
+			args[name] = []string{}
+		}
+		args[name] = append(args[name], val)
+	}
+	return args
 }

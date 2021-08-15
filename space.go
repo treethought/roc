@@ -40,6 +40,7 @@ func (ed *EndpointDefinition) grammar() Grammar {
 	if err != nil {
 		panic(err)
 	}
+	g.m.Active = ed.Grammar.Active
 	return g
 }
 

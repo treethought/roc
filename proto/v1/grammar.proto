@@ -3,6 +3,46 @@ package proto.v1;
 
 option go_package = "github.com/treethought/roc/proto/v1";
 
+/* A Grammar represents the pattern from which identifiers may be parsed into arguments and matched to endpoints. */
+/* A Grammar is what binds a physical level Endpoint into it's logical addres Space. */
+/* Spaces may use Grammars to resolve requests to an endpoint, or endpoints may be asked */
+/* themselves to use their own grammar to determine if they can resolve a request. */
+/* Grammars are bidirectional, meaning they can also construct an Identifier from their idividual parts */
+/* The Standard class of grammars represent the base functionality from which */
+/* ActiveGrammars and SimpleGrammars are built */
+message Grammar {
+	string base = 1;
+	repeated GroupElement groups = 2;
+	ActiveElement active = 3;
+}
+
+
+/* A GroupElement defines segements of an Identifier token. */
+/* GroupElements are matched against substrings of an Identifier via their regex */
+/* and are parsed and provided as arguments in the RequestContext during request evaluation. */
+/* Groups may also be used in the construction of a resource identifier */
+message GroupElement {
+	string name = 1;
+	uint64 min = 2;
+	uint64 max = 3;
+	string regex = 5;
+}
+
+/* RegexElement is a regex expression used to parse sequences of characters from an identifier */
+/* TODO This element can operate in two modes. */
+/* Firstly it contain either arbitrary regular expressions placed as the text within the element. */
+/* Secondly it can contain a type attribute and no contained text. Valid values for the type attribute are */
+message RegexElement {
+	string value = 1;
+}
+
+/* InterleaveElement contains multiple group elements which can be interleaved in any order. */
+message InterleaveElement {
+	repeated GroupElement groups = 1;
+}
+
+
+
 
 // An ActiveElement is used to define an Active grammar.
 // by convention an active identifier uses the active: scheme.
@@ -12,7 +52,7 @@ option go_package = "github.com/treethought/roc/proto/v1";
 // meaning they may be nested, forming functional programs.
 message ActiveElement {
 	string identifier = 1;
-	repeated string argmuents = 2;
+	repeated ActiveArgument arguments = 2;
 }
 
 // An ActiveArgument is an argument to parsed from the active identier
@@ -26,24 +66,5 @@ message ActiveArgument {
 	string desc = 4;
 }
 
-// A GroupElement defines segements of an Identifier token.
-// GroupElements are matched against substrings of an Identifier via their regex
-// and are parsed and provided as arguments in the RequestContext during request evaluation.
-// Groups may also be used in the construction of a resource identifier
-message GroupElement {
-	string name = 1;
-	uint64 min = 2;
-	uint64 max = 3;
-	string regex = 5;
-}
 
-// A Grammar represents the pattern from which identifiers may be parsed into arguments and matched to endpoints.
-// A Grammar is what binds a physical level Endpoint into it's logical addres Space.
-// Spaces may use Grammars to resolve requests to an endpoint, or endpoints may be asked
-// themselves to use their own grammar to determine if they can resolve a request.
-// Grammars are bidirectional, meaning they can also construct an Identifier from their idividual parts
-message Grammar {
-	string base = 1;
-	repeated GroupElement groups = 2;
-}
 

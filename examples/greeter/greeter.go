@@ -34,7 +34,7 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) interface{} {
 	}
 
 	// issue subrequest to upper case the name
-	upperID := roc.NewIdentifier("res://toUpper")
+	upperID := roc.NewIdentifier(fmt.Sprintf("active:toUpper+value@%s", name))
 	req := ctx.CreateRequest(upperID)
 	req.SetArgumentByValue("value", name)
 	upped, err := ctx.IssueRequest(req)

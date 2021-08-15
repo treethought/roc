@@ -13,6 +13,8 @@ import (
 // 	"path-segment": regexp.MustCompile("^[^/]+/[^/]+[a-zA-Z0-9]$"),
 // }
 
+var activeURIRegex = regexp.MustCompile(`\+(?P<name>[^@]+)@(?P<value>[^\+]+)`)
+
 // parseGrammar returns the group or active arguments from an identifier
 func parseGrammar(g *proto.Grammar, i string) (args map[string][]string) {
 	log.Trace("parsing grammar", "grammar", g, "identitifier", i)
@@ -109,27 +111,29 @@ func parseGroupElement(g *proto.GroupElement, i string) (args map[string][]strin
 
 func matchActive(a *proto.ActiveElement, i string) bool {
 	log.Debug("performing match on active element")
-	regex := `\+(?P<name>[^@]+)@(?P<value>[^\+]+)`
-	rx := regexp.MustCompile(regex)
-	return rx.MatchString(i)
+	return activeURIRegex.MatchString(i)
 }
 
 func parseActive(a *proto.ActiveElement, i string) (args map[string][]string) {
 	log.Trace("parsing active grammar")
 	args = make(map[string][]string)
-	regex := `\+(?P<name>[^@]+)@(?P<value>[^\+]+)`
-	rx := regexp.MustCompile(regex)
-	matches := rx.FindAllStringSubmatch(i, -1)
+	matches := activeURIRegex.FindAllStringSubmatch(i, -1)
 
 	// TODO fix nested active - prbly include base in regex
 	for _, m := range matches {
 		name, val := m[1], m[2]
-		log.Debug("parsed active arg", "name", m[1], "val", m[2])
-		_, ok := args[name]
-		if !ok {
-			args[name] = []string{}
+
+		for _, arg := range a.Arguments {
+			if arg.Name == name {
+				log.Debug("parsed active arg", "name", m[1], "val", m[2])
+				_, ok := args[name]
+				if !ok {
+					args[name] = []string{}
+				}
+				args[name] = append(args[name], val)
+			}
 		}
-		args[name] = append(args[name], val)
+
 	}
 	return args
 }

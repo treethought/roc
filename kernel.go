@@ -11,7 +11,7 @@ import (
 )
 
 type Kernel struct {
-	Spaces     map[Identifier]Space
+	Spaces     map[Identifier]*proto.Space
 	receiver   chan (*RequestContext)
 	Dispatcher Dispatcher
 	logger     hclog.Logger
@@ -20,7 +20,7 @@ type Kernel struct {
 
 func NewKernel() *Kernel {
 	k := &Kernel{
-		Spaces:     make(map[Identifier]Space),
+		Spaces:     make(map[Identifier]*proto.Space),
 		receiver:   make(chan *RequestContext),
 		Dispatcher: NewCoreDispatcher(),
 		logger: hclog.New(&hclog.LoggerOptions{
@@ -50,8 +50,8 @@ func (k Kernel) startTransport(ed *proto.EndpointDefinition) (PhysicalTransport,
 
 	scope := RequestScope{m: &proto.RequestScope{}}
 	for _, s := range k.Spaces {
-		k.logger.Debug("adding to scope", "space", s.m.Identifier)
-		scope.m.Spaces = append(scope.m.Spaces, s.m)
+		k.logger.Debug("adding to scope", "space", s.GetIdentifier())
+		scope.m.Spaces = append(scope.m.Spaces, s)
 	}
 
 	initMsg := &InitTransport{Scope: scope}
@@ -68,7 +68,7 @@ func (k Kernel) startTransport(ed *proto.EndpointDefinition) (PhysicalTransport,
 func (k *Kernel) Start() error {
 	log.Info("starting kernel")
 	for _, s := range k.Spaces {
-		for _, ed := range s.m.Endpoints {
+		for _, ed := range s.GetEndpoints() {
 			if ed.Type == "transport" {
 				client, err := k.startTransport(ed)
 				if err != nil {
@@ -102,8 +102,8 @@ func (k *Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 		k.Dispatcher = NewCoreDispatcher()
 	}
 	for _, s := range k.Spaces {
-		k.logger.Debug("adding to scope", "space", s.m.Identifier)
-		ctx.m.Scope.Spaces = append(ctx.m.Scope.Spaces, s.m)
+		k.logger.Debug("adding to scope", "space", s.GetIdentifier())
+		ctx.m.Scope.Spaces = append(ctx.m.Scope.Spaces, s)
 	}
 
 	k.logger.Info("dispatching request from kernel",
@@ -118,8 +118,8 @@ func (k *Kernel) Register(spaces ...*proto.Space) {
 		k.logger.Info("registering space",
 			"space", space.GetIdentifier(),
 		)
-		id := NewIdentifier(space.Identifier)
-		k.Spaces[id] = Space{space}
+		id := NewIdentifier(space.GetIdentifier())
+		k.Spaces[id] = space
 		k.logger.Info("registered spaces", "size", len(spaces))
 	}
 }

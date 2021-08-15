@@ -19,25 +19,15 @@ type SpaceDefinition struct {
 	Spaces []*proto.Space `json:"spaces" yaml:"spaces"`
 }
 
-type Space struct {
-	m *proto.Space
-}
-
-func NewSpace(identifier Identifier, endpoints ...*proto.EndpointDefinition) Space {
-	s := Space{
-		m: &proto.Space{
-			Identifier: identifier.String(),
-			Imports:    []*proto.Space{},
-			Endpoints:  endpoints,
-		},
+func NewSpace(identifier Identifier, endpoints ...*proto.EndpointDefinition) *proto.Space {
+	space := &proto.Space{
+		Identifier: identifier.String(),
+		Imports:    []*proto.Space{},
+		Endpoints:  endpoints,
 	}
 
-	log.Debug("created space", "identifier", s.m.Identifier, "endpoints", len(s.m.Endpoints))
-	return s
-}
-
-func (s *Space) BindEndpoint(e *proto.EndpointDefinition) {
-	s.m.Endpoints = append(s.m.Endpoints, e)
+	log.Debug("created space", "identifier", space.GetIdentifier(), "endpoints", len(space.GetEndpoints()))
+	return space
 }
 
 func LoadSpaces(path string) ([]*proto.Space, error) {
@@ -69,13 +59,12 @@ func canResolve(ctx *RequestContext, e *proto.EndpointDefinition) bool {
 	}
 
 	return matchGrammar(e.Grammar, ctx.m.Request.Identifier)
-
 }
 
-func (s Space) Resolve(ctx *RequestContext) (*proto.EndpointDefinition, bool) {
-	for _, ed := range s.m.Endpoints {
+func resolveToEndpoint(s *proto.Space, ctx *RequestContext) (*proto.EndpointDefinition, bool) {
+	for _, ed := range s.GetEndpoints() {
 		log.Trace("interrogating endpoint",
-			"space", s.m.Identifier,
+			"space", s.GetIdentifier(),
 			"endpoint", ed.Name,
 		)
 		// TODO match grammar in endpoint or in space?

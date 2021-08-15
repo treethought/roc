@@ -40,9 +40,9 @@ func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
 }
 
 // InjectSpace adds the given space to the request scope
-func (c *RequestContext) InjectSpace(space Space) {
-	log.Debug("injecting space into scope", "space", space.m.Identifier, "size", len(space.m.Endpoints))
-	c.m.Scope.Spaces = append(c.m.Scope.Spaces, space.m)
+func (c *RequestContext) InjectSpace(space *proto.Space) {
+	log.Debug("injecting space into scope", "space", space.GetIdentifier(), "size", len(space.GetEndpoints()))
+	c.m.Scope.Spaces = append(c.m.Scope.Spaces, space)
 }
 
 // GetArgument retrieves the identifier for named argument provided by the request.

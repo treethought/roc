@@ -65,7 +65,7 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {
 	// issue request into our wrapped space which is otherwise
 	// unavailable to outside of the overlay
 
-	ctx.InjectSpace(Space{o.Space})
+	ctx.InjectSpace(o.Space)
 
 	req := ctx.CreateRequest(id)
 	req.m.Verb = ctx.Request().m.Verb

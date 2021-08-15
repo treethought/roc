@@ -25,8 +25,7 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointDefi
 	go func() {
 		for _, s := range ctx.m.Scope.Spaces {
 			log.Trace("checking space: ", "space", s.Identifier)
-			wrap := Space{s}
-			ed, ok := wrap.Resolve(ctx)
+			ed, ok := resolveToEndpoint(s, ctx)
 			if ok {
 				c <- ed
 			}
@@ -38,7 +37,7 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointDefi
 
 }
 
-func newTransientSpace(endpoints ...*proto.EndpointDefinition) Space {
+func newTransientSpace(endpoints ...*proto.EndpointDefinition) *proto.Space {
 	uid := uuid.New()
 	spaceID := fmt.Sprintf("dynamic-space://%s", uid.String())
 
@@ -49,9 +48,16 @@ func newTransientSpace(endpoints ...*proto.EndpointDefinition) Space {
 
 func injectParsedArgs(ctx *RequestContext, e *proto.EndpointDefinition) {
 	args := parseGrammar(e.Grammar, ctx.Request().Identifier().String())
-	log.Debug("injecting parsed grammar args", "args", args)
+	log.Info("injecting parsed grammar args", "args", args)
 
 	for k, v := range args {
+		// TODO parse for identifier better
+		// if strings.Contains(v[0], ":/") {
+		// 	log.Warn("parsed arg is already identifier", "arg", k, "val", v[0])
+		// 	ctx.Request().SetArgument(k, NewIdentifier(v[0]))
+		// 	continue
+		// }
+
 		// TODO: not overwriting arguments already added to the request
 		// might want to change this
 		_, exists := ctx.Request().m.ArgumentValues[k]

@@ -15,7 +15,7 @@ var OverlayTypeHTTPBridge = "httpBridge"
 type HttpBridgeOverlay struct {
 	BaseEndpoint
 	Grammar *proto.Grammar
-	Space   Space
+	Space   *proto.Space
 }
 
 type HttpRequestEndpoint struct {
@@ -142,8 +142,8 @@ func (e HttpRequestEndpoint) Source(ctx *RequestContext) interface{} {
 func NewHTTPBridgeOverlay(ed *proto.EndpointDefinition) HttpBridgeOverlay {
 	return HttpBridgeOverlay{
 		BaseEndpoint: BaseEndpoint{},
-		Grammar:      ed.Grammar,
-		Space:        Space{ed.Space},
+		Grammar:      ed.GetGrammar(),
+		Space:        ed.GetSpace(),
 	}
 }
 

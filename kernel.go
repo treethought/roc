@@ -48,10 +48,10 @@ func (k Kernel) startTransport(ed *proto.EndpointDefinition) (PhysicalTransport,
 		os.Exit(1)
 	}
 
-	scope := RequestScope{m: &proto.RequestScope{}}
+	scope := &proto.RequestScope{}
 	for _, s := range k.Spaces {
 		k.logger.Debug("adding to scope", "space", s.GetIdentifier())
-		scope.m.Spaces = append(scope.m.Spaces, s)
+		scope.Spaces = append(scope.Spaces, s)
 	}
 
 	initMsg := &InitTransport{Scope: scope}

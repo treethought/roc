@@ -6,10 +6,6 @@ import (
 	proto "github.com/treethought/roc/proto/v1"
 )
 
-type RequestScope struct {
-	m *proto.RequestScope
-}
-
 type RequestContext struct {
 	m *proto.RequestContext
 }

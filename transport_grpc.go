@@ -17,7 +17,7 @@ func (m *TransportGRPC) Init(msg *InitTransport) error {
 	log.Debug("making transport grpc init call")
 
 	protoScope := &proto.RequestScope{}
-	for _, s := range msg.Scope.m.Spaces {
+	for _, s := range msg.Scope.Spaces {
 		protoScope.Spaces = append(protoScope.Spaces, s)
 	}
 
@@ -43,12 +43,11 @@ type TransportGRPCServer struct {
 }
 
 func (m *TransportGRPCServer) Init(ctx context.Context, req *proto.InitTransport) (*proto.Empty, error) {
-	msg := &InitTransport{Scope: RequestScope{m: &proto.RequestScope{}}}
+	msg := &InitTransport{Scope: &proto.RequestScope{}}
 	for _, s := range req.Scope.Spaces {
-		msg.Scope.m.Spaces = append(msg.Scope.m.Spaces, s)
+		msg.Scope.Spaces = append(msg.Scope.Spaces, s)
 	}
 	err := m.Impl.Init(msg)
-
 	return &proto.Empty{}, err
 }
 

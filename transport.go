@@ -13,7 +13,7 @@ import (
 const EndpointTypeTransport string = "transport"
 
 type InitTransport struct {
-	Scope RequestScope
+	Scope *proto.RequestScope
 }
 
 // EndpointTransport is an endpoint that issues external events into the roc system
@@ -28,7 +28,7 @@ type Transport interface {
 // and automatically handles scope initialization
 type TransportImpl struct {
 	*Accessor
-	Scope      RequestScope
+	Scope      *proto.RequestScope
 	OnInit     func() error
 	Dispatcher Dispatcher
 }
@@ -37,14 +37,14 @@ func NewTransport(name string) *TransportImpl {
 	// this is done inside the transport plugin
 	return &TransportImpl{
 		Accessor:   NewAccessor(name),
-		Scope:      RequestScope{m: &proto.RequestScope{}},
+		Scope:      &proto.RequestScope{},
 		OnInit:     func() error { return nil },
 		Dispatcher: NewCoreDispatcher(),
 	}
 }
 
 func (t *TransportImpl) Init(msg *InitTransport) error {
-	log.Debug("initializing transport scope", "size", len(msg.Scope.m.Spaces))
+	log.Debug("initializing transport scope", "size", len(msg.Scope.Spaces))
 	t.Scope = msg.Scope
 	log.Info("transporter has been initialized")
 	return t.OnInit()
@@ -55,11 +55,11 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 		log.Error("transport dispatcher is nil, setting")
 		t.Dispatcher = &CoreDispatcher{}
 	}
-	for _, s := range t.Scope.m.Spaces {
+	for _, s := range t.Scope.Spaces {
 		ctx.InjectSpace(s)
 	}
 
-	ctx.m.Scope = t.Scope.m
+	ctx.m.Scope = t.Scope
 
 	log.Debug("dispatching request from transport",
 		"identifier", ctx.Request().Identifier,

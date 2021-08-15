@@ -2,6 +2,7 @@ package roc
 
 import (
 	"fmt"
+	"strings"
 
 	proto "github.com/treethought/roc/proto/v1"
 )
@@ -54,9 +55,11 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {
 	}
 
 	// reformat the identifier for context of wrapped space
-	// build new res:// scheme from overlay prefix's root
+	// build new uri scheme from overlay prefix's root
 	// i.e. res://app/helloworld -> uri=/helloworld -> res://helloworld
-	id := NewIdentifier(fmt.Sprintf("res://%s", m.GetValue()))
+	relUri := strings.Replace(m.GetValue(), o.grammar.GetBase(), "", 1)
+	id := NewIdentifier(fmt.Sprintf("res://%s", relUri))
+	log.Debug("formatted identifier for wrapped space", "uri", m.GetValue(), "id", id)
 
 	// inject the wrapped space into the request scope and
 	// issue request into our wrapped space which is otherwise

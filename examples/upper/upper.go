@@ -11,12 +11,12 @@ import (
 var log = hclog.Default()
 
 type MyEndpoint struct {
-	*roc.Accessor
+	*roc.BaseEndpoint
 }
 
 func New() *MyEndpoint {
 	return &MyEndpoint{
-		Accessor: roc.NewAccessor("upper"),
+		BaseEndpoint: &roc.BaseEndpoint{},
 	}
 }
 

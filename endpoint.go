@@ -10,6 +10,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+const EndpointTypeAccessor string = "accessor"
+
 // Endpoint represents the gateway between a logical resource and the computation
 type Endpoint interface {
 	Resource

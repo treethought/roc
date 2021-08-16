@@ -27,7 +27,7 @@ type Transport interface {
 // This type is useful for embedding custom implementations of EndpointTransport
 // and automatically handles scope initialization
 type TransportImpl struct {
-	*Accessor
+	BaseEndpoint
 	Scope      *proto.RequestScope
 	OnInit     func() error
 	Dispatcher Dispatcher
@@ -36,7 +36,6 @@ type TransportImpl struct {
 func NewTransport(name string) *TransportImpl {
 	// this is done inside the transport plugin
 	return &TransportImpl{
-		Accessor:   NewAccessor(name),
 		Scope:      &proto.RequestScope{},
 		OnInit:     func() error { return nil },
 		Dispatcher: NewCoreDispatcher(),

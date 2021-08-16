@@ -24,13 +24,16 @@ func parseGrammar(g *proto.Grammar, i string) (args map[string][]string) {
 		return args
 	}
 
+	// strip the base and perform match on remaining portion
+	path := strings.Replace(i, g.Base, "", 1)
+
 	if g.Active != nil {
-		return parseActive(g.Active, i)
+		return parseActive(g.Active, path)
 
 	}
 
 	for _, group := range g.GetGroups() {
-		for k, v := range parseGroupElement(group, i) {
+		for k, v := range parseGroupElement(group, path) {
 			_, exists := args[k]
 			if exists {
 				args[k] = append(args[k], v...)
@@ -54,15 +57,18 @@ func matchGrammar(g *proto.Grammar, i string) bool {
 		return false
 	}
 
+	// strip the base and perform match on remaining portion
+	path := strings.Replace(i, g.Base, "", 1)
+
 	for _, p := range g.Groups {
-		if !matchGroupElement(p, i) {
+		if !matchGroupElement(p, path) {
 			log.Trace("group does not match", "group", p.Name)
 			return false
 		}
 	}
 
 	if len(g.GetActive().GetArguments()) > 0 {
-		if !matchActive(g.Active, i) {
+		if !matchActive(g.Active, path) {
 			log.Debug("active element does not match", "active", g.Active)
 			return false
 		}

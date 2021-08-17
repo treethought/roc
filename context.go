@@ -35,6 +35,10 @@ func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
 	return NewRequest(identifier, proto.Verb_VERB_SOURCE, "")
 }
 
+func (c *RequestContext) Scope() *proto.RequestScope {
+    return c.m.GetScope()
+}
+
 // InjectSpace adds the given space to the request scope
 func (c *RequestContext) InjectSpace(space *proto.Space) {
 	log.Debug("injecting space into scope", "space", space.GetIdentifier(), "size", len(space.GetEndpoints()))
@@ -59,7 +63,7 @@ func (c *RequestContext) GetArgumentValue(name string) (Representation, error) {
 	identifier := c.GetArgument(name)
 	if identifier.String() == "" {
 		log.Error("argument identifier is empty", "arg_name", name)
-		return NewRepresentation(nil), nil
+		return NewRepresentation(nil), fmt.Errorf("argument not set")
 	}
 
 	rep, err := c.Source(identifier, "")

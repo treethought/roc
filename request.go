@@ -31,6 +31,10 @@ func (r *Request) Identifier() Identifier {
 	return NewIdentifier(r.m.Identifier)
 }
 
+func (r *Request) Verb() proto.Verb {
+	return r.m.Verb
+}
+
 // SetRepresentationClass sets the desired format of the representation response
 func (r *Request) SetRepresentationClass(class string) {
 	r.m.RepresentationClass = class

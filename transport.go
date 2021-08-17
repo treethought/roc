@@ -61,7 +61,7 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 	ctx.m.Scope = t.Scope
 
 	log.Debug("dispatching request from transport",
-		"identifier", ctx.Request().Identifier,
+		"identifier", ctx.Request().Identifier(),
 		"num_spaces", len(ctx.m.Scope.Spaces),
 	)
 

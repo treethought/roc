@@ -56,7 +56,6 @@ func Evaluate(ctx *RequestContext, e Endpoint) interface{} {
 		return e.Source(ctx)
 
 	}
-
 }
 
 type BaseEndpoint struct {

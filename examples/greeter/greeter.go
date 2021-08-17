@@ -33,10 +33,28 @@ func (e *MyEndpoint) Source(ctx *roc.RequestContext) interface{} {
 		return "no name?"
 	}
 
+	nameString := new(proto.String)
+	err = name.To(nameString)
+	if err != nil {
+		return err
+	}
+
 	// issue subrequest to upper case the name
-	upperID := roc.NewIdentifier(fmt.Sprintf("active:toUpper+value@%s", name))
-	req := ctx.CreateRequest(upperID)
-	req.SetArgumentByValue("value", name)
+
+	// via resource identifer that will match endpoint grammar
+	// upperID := roc.NewIdentifier(fmt.Sprintf("active:toUpper+value@%s", name))
+	// req := ctx.CreateRequest(upperID)
+
+	// or construct the identifier behind the scenes using the endpoint's ID
+	metaID := roc.NewIdentifier("example:upper")
+	args := map[string][]string{"value": {nameString.Value}}
+
+	req, err := ctx.CreateRequestToEndpoint(metaID.String(), args)
+	if err != nil {
+		log.Error("failed to create targetted endpoint request", "endpoint", metaID, "error", err)
+		return err
+	}
+
 	upped, err := ctx.IssueRequest(req)
 	if err != nil {
 		log.Error("failed to dispatch subrequest request", "error", err)

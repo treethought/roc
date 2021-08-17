@@ -85,6 +85,18 @@ func injectParsedArgs(ctx *RequestContext, e *proto.EndpointMeta) {
 
 }
 
+func (d CoreDispatcher) getMeta(ctx *RequestContext) *proto.EndpointMeta {
+	id := ctx.Request().Identifier().String()
+	for _, s := range ctx.Scope().Spaces {
+		for _, e := range s.Endpoints {
+			if e.Identifier == id {
+				return e
+			}
+		}
+	}
+	return nil
+}
+
 func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	log.Info("dispatching request",
 		"identifier", ctx.Request().Identifier().String(),
@@ -92,6 +104,11 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		"verb", ctx.Request().m.Verb,
 		"arguments", ctx.Request().m.Arguments,
 	)
+
+	if ctx.Request().Verb() == proto.Verb_VERB_META {
+		meta := d.getMeta(ctx)
+		return NewRepresentation(meta), nil
+	}
 
 	ed := d.resolveEndpoint(ctx)
 	log.Info("resolved to endpoint", "endpoint", ed.Identifier, "type", ed.Type)

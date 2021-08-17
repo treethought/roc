@@ -1,6 +1,7 @@
 package roc
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -15,7 +16,37 @@ import (
 
 var activeURIRegex = regexp.MustCompile(`\+(?P<name>[^@]+)@(?P<value>[^\+]+)`)
 
-// parseGrammar returns the group or active arguments from an identifier
+func constructIdentifier(g *proto.Grammar, args map[string][]string) string {
+	if g.GetActive() != nil {
+		i := g.Active.GetIdentifier()
+		for k, v := range args {
+			i = fmt.Sprintf("%s+%s@%s", i, k, v[0])
+		}
+		return i
+	}
+	// TODO handle different types of groyps
+	// like path vs regex
+	// right now assuming always path based
+	// if !strings.HasSuffix(i, "/") {
+	// i := fmt.Sprintf("%s/", i)
+	// return
+	// }
+
+	if g.GetBase() != "" {
+		i := g.GetBase()
+		for _, g := range g.GetGroups() {
+			val, ok := args[g.Name]
+			if ok {
+				i = fmt.Sprintf("%s%s/", i, val[0])
+			}
+		}
+		return i
+	}
+
+	return ""
+}
+
+// parseGrammar returns the group or active arguments from n identifier
 func parseGrammar(g *proto.Grammar, i string) (args map[string][]string) {
 	log.Trace("parsing grammar", "grammar", g, "identitifier", i)
 	args = make(map[string][]string)

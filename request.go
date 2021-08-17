@@ -35,6 +35,10 @@ func (r *Request) Verb() proto.Verb {
 	return r.m.Verb
 }
 
+func (r *Request) SetVerb(verb proto.Verb) {
+	r.m.Verb = verb
+}
+
 // SetRepresentationClass sets the desired format of the representation response
 func (r *Request) SetRepresentationClass(class string) {
 	r.m.RepresentationClass = class

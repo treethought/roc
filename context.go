@@ -35,6 +35,26 @@ func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
 	return NewRequest(identifier, proto.Verb_VERB_SOURCE, "")
 }
 
+func (c *RequestContext) CreateRequestToEndpoint(endpointID string, args map[string][]string) (*Request, error) {
+	eId := NewIdentifier(endpointID)
+	mReq := NewRequest(eId, proto.Verb_VERB_META, "")
+	metaRep, err := c.IssueRequest(mReq)
+	if err != nil {
+		log.Error("failed to get endpoint meta", "endpoint", endpointID, "err", err)
+		return nil, err
+	}
+
+	meta := new(proto.EndpointMeta)
+	err = metaRep.To(meta)
+	if err != nil {
+		log.Error("unexpected meta representation", "endpoint", endpointID, "err", err)
+		return nil, err
+	}
+	identifer := constructIdentifier(meta.GetGrammar(), args)
+
+	return NewRequest(NewIdentifier(identifer), proto.Verb_VERB_SOURCE, ""), nil
+}
+
 func (c *RequestContext) Scope() *proto.RequestScope {
 	return c.m.GetScope()
 }

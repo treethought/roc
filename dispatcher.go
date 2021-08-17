@@ -105,13 +105,13 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 
 	switch ed.Type {
 	case EndpointTypeTransient:
-		endpoint = NewTransientEndpoint(ed.Literal)
+		endpoint = NewTransientEndpoint(ed)
 
 	case EndpointTypeAccessor:
-		endpoint = NewPhysicalEndpoint(ed.Cmd)
+		endpoint = NewPhysicalEndpoint(ed)
 
 	case EndpointTypeFileset:
-		endpoint = NewFilesetRegex(ed.Identifier, ed.Regex)
+		endpoint = NewFilesetRegex(ed)
 
 	case EndpointTypeTransparentOverlay:
 		overlay := NewTransparentOverlay(ed)
@@ -122,8 +122,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		endpoint = overlay
 
 	case EndpointTypeHTTPRequestAccessor:
-		overlay := NewHttpRequestEndpoint(ed)
-		endpoint = overlay
+		endpoint = NewHttpRequestEndpoint(ed)
 
 	default:
 		log.Error("Unknown endpoint type", "endpoint", ed)

@@ -14,8 +14,7 @@ type Overlay interface {
 }
 
 type TransparentOverlay struct {
-	BaseEndpoint
-	grammar    *proto.Grammar
+	*BaseEndpoint
 	Space      *proto.Space
 	onRequest  func(ctx *RequestContext)
 	onResponse func(ctx *RequestContext, resp Representation)
@@ -23,9 +22,8 @@ type TransparentOverlay struct {
 
 func NewTransparentOverlay(ed *proto.EndpointMeta) TransparentOverlay {
 	return TransparentOverlay{
-		BaseEndpoint: BaseEndpoint{},
+		BaseEndpoint: NewBaseEndpoint(ed),
 		Space:        ed.Space,
-		grammar:      ed.Grammar,
 		onRequest:    func(ctx *RequestContext) {},
 		onResponse:   func(ctx *RequestContext, resp Representation) {},
 	}
@@ -65,7 +63,7 @@ func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {
 	// reformat the identifier for context of wrapped space
 	// build new uri scheme from overlay prefix's root
 	// i.e. res://app/helloworld -> uri=/helloworld -> res://helloworld
-	relUri := strings.Replace(m.GetValue(), o.grammar.GetBase(), "", 1)
+	relUri := strings.Replace(m.GetValue(), o.Grammar().GetBase(), "", 1)
 	id := NewIdentifier(fmt.Sprintf("res:/%s", relUri))
 	log.Warn("formatted identifier for wrapped space", "uri", m.GetValue(), "id", id)
 

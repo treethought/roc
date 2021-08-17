@@ -59,7 +59,29 @@ func Evaluate(ctx *RequestContext, e Endpoint) interface{} {
 
 }
 
-type BaseEndpoint struct{}
+type BaseEndpoint struct {
+	meta *proto.EndpointMeta
+}
+
+func NewBaseEndpoint(ed *proto.EndpointMeta) *BaseEndpoint {
+	return &BaseEndpoint{meta: ed}
+}
+
+func (e BaseEndpoint) Identifier() string {
+	return e.meta.GetIdentifier()
+}
+
+func (e BaseEndpoint) Type() string {
+	return e.meta.GetType()
+}
+
+func (e BaseEndpoint) Grammar() *proto.Grammar {
+	return e.meta.GetGrammar()
+}
+
+func (e BaseEndpoint) Meta() *proto.EndpointMeta {
+	return e.meta
+}
 
 func (e BaseEndpoint) Source(ctx *RequestContext) interface{} {
 	log.Error("using default source handler")

@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 // PhysicalEndpoint represents an interface to a running  endpoint instance.
@@ -37,13 +38,14 @@ func Serve(e Endpoint) {
 }
 
 // NewPhysicalEndpoint starts a physical process and returns an RPC implementation
-func NewPhysicalEndpoint(path string) Endpoint {
+func NewPhysicalEndpoint(ed *proto.EndpointMeta) *PhysicalEndpoint {
+	// TODO: sould meta be accessible from the physical endpoint client?
 	// We're a host! Start by launching the plugin pss.
-	log.Info("creating plugin client", "cmd", path)
+	log.Info("creating plugin client", "cmd", ed.GetCmd())
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: Handshake,
 		Plugins:         PluginMap,
-		Cmd:             exec.Command(path),
+		Cmd:             exec.Command(ed.GetCmd()),
 		Managed:         true,
 		AllowedProtocols: []plugin.Protocol{
 			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
@@ -56,18 +58,18 @@ func NewPhysicalEndpoint(path string) Endpoint {
 	})
 
 	// Connect via RPC
-	log.Info("connecting via rpc", "cmd", path)
+	log.Info("connecting via rpc", "cmd", ed.GetCmd())
 	rpcClient, err := client.Client()
 	if err != nil {
-		log.Error("failed to connect via rpc", "endpoint", path, "error", err)
+		log.Error("failed to connect via rpc", "endpoint", ed.GetCmd(), "error", err)
 		os.Exit(1)
 	}
 
 	// RequestContext the plugin
-	log.Info("dispensing plugin", "cmd", path)
+	log.Info("dispensing plugin", "cmd", ed.GetCmd())
 	raw, err := rpcClient.Dispense("endpoint")
 	if err != nil {
-		log.Error("failed to dispense endpoint", "endpoint", path, "error", err)
+		log.Error("failed to dispense endpoint", "endpoint", ed.GetCmd(), "error", err)
 		panic(err)
 		os.Exit(1)
 	}
@@ -75,7 +77,7 @@ func NewPhysicalEndpoint(path string) Endpoint {
 	// We should have a Greeter now! This feels like a normal interface
 	// implementation but is in fact over an RPC connection.
 	endpoint := raw.(Endpoint)
-	return PhysicalEndpoint{
+	return &PhysicalEndpoint{
 		Endpoint: endpoint,
 		Client:   client,
 	}

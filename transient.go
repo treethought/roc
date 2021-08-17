@@ -12,42 +12,36 @@ const EndpointTypeTransient string = "transient"
 // TransientEndpoint is dynamically generated in-memory endpoint
 // these are typically used for internal temporary resources.
 type TransientEndpoint struct {
-	BaseEndpoint
-	Grammar        *proto.Grammar `yaml:"grammar,omitempty"`
-	Representation Representation
+	*BaseEndpoint
 }
 
-func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
-	uid := uuid.New()
-	uri := fmt.Sprintf("transient://%s", uid.String())
+func NewTransientEndpoint(ed *proto.EndpointMeta) TransientEndpoint {
+	ed.Type = EndpointTypeTransient
 
-	repr := Representation{rep}
+	if ed.GetIdentifier() == "" {
+		uid := uuid.New()
+		uri := fmt.Sprintf("transient://%s", uid.String())
+		ed.Identifier = uri
+	}
+
+	if ed.GetLiteral() == nil {
+		log.Warn("transient endpoint has nil represetation", "id", ed.Identifier)
+	}
+
+	if ed.GetGrammar() == nil {
+		ed.Grammar = &proto.Grammar{Base: ed.Identifier}
+	}
+
+	repr := Representation{ed.Literal}
 	log.Debug("creating transient endpoint",
 		"type", repr.Type(),
-		"uri", uri,
+		"uri", ed.Identifier,
 	)
 	log.Trace(repr.String())
 
-	grammar := &proto.Grammar{Base: uri}
-
 	return TransientEndpoint{
-		BaseEndpoint:   BaseEndpoint{},
-		Grammar:        grammar,
-		Representation: repr,
+		BaseEndpoint: NewBaseEndpoint(ed),
 	}
-}
-
-func (e *TransientEndpoint) Definition() *proto.EndpointMeta {
-	return &proto.EndpointMeta{
-		Identifier: e.Grammar.GetBase(),
-		Type:       EndpointTypeTransient,
-		Grammar:    e.Grammar,
-		Literal:    e.Representation.message(),
-	}
-}
-
-func (e *TransientEndpoint) Identifier() Identifier {
-	return NewIdentifier(e.Grammar.GetBase())
 }
 
 func (e TransientEndpoint) Type() string {
@@ -57,11 +51,13 @@ func (e TransientEndpoint) Type() string {
 func (e TransientEndpoint) Source(ctx *RequestContext) interface{} {
 	log.Debug("sourcing transient endpoint",
 		"identifier", ctx.Request().Identifier(),
-		"type", e.Representation.Type(),
+		"type", e.Type(),
 	)
-	log.Trace(e.Representation.String())
 
-	m, err := e.Representation.ToMessage()
+	rep := NewRepresentation(e.Meta().GetLiteral())
+	log.Trace(rep.String())
+
+	m, err := rep.ToMessage()
 	if err != nil {
 		log.Error("failed to construct transient message", "err", err)
 		return err

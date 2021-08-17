@@ -85,7 +85,8 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 
 		rep := NewRepresentation(val)
 
-		pbvEndpoint := NewTransientEndpoint(rep.m)
+		ed := &proto.EndpointMeta{Literal: rep.m}
+		pbvEndpoint := NewTransientEndpoint(ed)
 
 		log.Info("created transient pbv endpoint",
 			"arg", k, "type", rep.Type(),
@@ -93,8 +94,9 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 		)
 
 		// set the argument value to the pbv identifier
-		req.SetArgument(k, pbvEndpoint.Identifier())
-		defs = append(defs, pbvEndpoint.Definition())
+		id := NewIdentifier(pbvEndpoint.Identifier())
+		req.SetArgument(k, id)
+		defs = append(defs, pbvEndpoint.Meta())
 	}
 
 	if len(defs) > 0 {

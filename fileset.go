@@ -10,53 +10,14 @@ import (
 const EndpointTypeFileset string = "fileset"
 
 type Fileset struct {
-	BaseEndpoint
-	Regex      string
-	grammar    *proto.Grammar
-	Mutable    bool
-	Identifier string
+	*BaseEndpoint
+	Mutable bool
 }
 
-func NewFilesetRegex(id string, rx string) Fileset {
-	grammar := &proto.Grammar{
-		Base: rx,
-		Groups: []*proto.GroupElement{
-			{Regex: rx, Name: "regex"},
-		},
-	}
-
+func NewFilesetRegex(ed *proto.EndpointMeta) Fileset {
 	return Fileset{
-		BaseEndpoint: BaseEndpoint{},
-		grammar:      grammar,
+		BaseEndpoint: NewBaseEndpoint(ed),
 		Mutable:      false,
-		Identifier:   id,
-	}
-}
-
-func (f Fileset) Grammar() *proto.Grammar {
-	if f.grammar.Base != "" {
-		return f.grammar
-	}
-
-	if f.Regex != "" {
-		grammar := &proto.Grammar{
-			Base: f.Regex,
-			Groups: []*proto.GroupElement{
-				{Regex: f.Regex, Name: "regex"},
-			},
-		}
-		return grammar
-	}
-	return &proto.Grammar{}
-
-}
-
-func (e Fileset) Definition() *proto.EndpointMeta {
-
-	return &proto.EndpointMeta{
-		Identifier: e.Identifier,
-		Type:       EndpointTypeFileset,
-		Grammar:    e.Grammar(),
 	}
 }
 
@@ -64,7 +25,8 @@ func (e Fileset) Source(ctx *RequestContext) interface{} {
 	path := strings.Replace(ctx.Request().Identifier().String(), "res:/", "", 1)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
+		log.Error("failed to read fileset path", "path", path, "err", err)
+		return err
 	}
 	return string(data)
 }

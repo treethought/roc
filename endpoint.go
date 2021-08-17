@@ -5,10 +5,12 @@ import (
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
+
+const EndpointTypeAccessor string = "accessor"
 
 // Endpoint represents the gateway between a logical resource and the computation
 type Endpoint interface {
@@ -24,32 +26,31 @@ type Endpoint interface {
 // Evaluator can be implemented by an endpoint to overide the default request evaluation switch
 type Evaluator interface {
 	// Evaluate processes a request to create or return a Representation of the requested resource
-	Evaluate(ctx *RequestContext) Representation
+	Evaluate(ctx *RequestContext) interface{}
 }
 
-func Evaluate(ctx *RequestContext, e Endpoint) Representation {
-
+func Evaluate(ctx *RequestContext, e Endpoint) interface{} {
 	// defer to endpoint's custom implementation if defined
 	defined, ok := e.(Evaluator)
 	if ok {
 		return defined.Evaluate(ctx)
 	}
 
-	log.Debug("using default evaluate handler")
+	log.Trace("using default evaluate handler")
 
 	// use default verb routing
-	switch ctx.Request.Verb {
-	case Source:
+	switch ctx.Request().m.Verb {
+	case proto.Verb_VERB_SOURCE:
 		return e.Source(ctx)
-	case Sink:
+	case proto.Verb_VERB_SINK:
 		e.Sink(ctx)
-		return nil
-	case New:
-		return e.New(ctx)
-	case Delete:
-		return e.Delete(ctx)
-	case Exists:
-		return e.Exists(ctx)
+		return NewRepresentation(nil)
+	case proto.Verb_VERB_NEW:
+		return NewRepresentation(e.New(ctx))
+	case proto.Verb_VERB_DELETE:
+		return NewRepresentation(&proto.BoolResponse{Value: e.Delete(ctx)})
+	case proto.Verb_VERB_EXISTS:
+		return NewRepresentation(&proto.BoolResponse{Value: e.Exists(ctx)})
 
 	default:
 		return e.Source(ctx)
@@ -60,15 +61,15 @@ func Evaluate(ctx *RequestContext, e Endpoint) Representation {
 
 type BaseEndpoint struct{}
 
-func (e BaseEndpoint) Source(ctx *RequestContext) Representation {
-	log.Info("using default source handler")
+func (e BaseEndpoint) Source(ctx *RequestContext) interface{} {
+	log.Error("using default source handler")
 	return nil
 }
 
 func (e BaseEndpoint) Sink(ctx *RequestContext) {}
 
 func (e BaseEndpoint) New(ctx *RequestContext) Identifier {
-	return ""
+	return Identifier{}
 }
 func (e BaseEndpoint) Delete(ctx *RequestContext) bool {
 	return false
@@ -77,7 +78,7 @@ func (e BaseEndpoint) Exists(ctx *RequestContext) bool {
 	return false
 }
 func (e BaseEndpoint) Transrept(ctx *RequestContext) Representation {
-	return nil
+	return NewRepresentation(nil)
 }
 
 // This is the implementation of plugin.Plugin so we can serve/consume this

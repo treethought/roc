@@ -3,6 +3,8 @@ package roc
 import (
 	"io/ioutil"
 	"strings"
+
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 const EndpointTypeFileset string = "fileset"
@@ -10,18 +12,16 @@ const EndpointTypeFileset string = "fileset"
 type Fileset struct {
 	BaseEndpoint
 	Regex   string
-	grammar Grammar
+	grammar *proto.Grammar
 	Mutable bool
 }
 
 func NewFilesetRegex(rx string) Fileset {
-	grammar, err := NewGrammar(rx, GroupElement{
-		Regex: rx,
-		Name:  "regex",
-	})
-	if err != nil {
-		// log.Error(err)
-		panic(err)
+	grammar := &proto.Grammar{
+		Base: rx,
+		Groups: []*proto.GroupElement{
+			{Regex: rx, Name: "regex"},
+		},
 	}
 
 	return Fileset{
@@ -31,34 +31,37 @@ func NewFilesetRegex(rx string) Fileset {
 	}
 }
 
-func (f Fileset) Grammar() Grammar {
+func (f Fileset) Grammar() *proto.Grammar {
 	if f.grammar.Base != "" {
 		return f.grammar
 	}
+
 	if f.Regex != "" {
-		g, _ := NewGrammar(f.Regex, GroupElement{
-			Regex: f.Regex,
-			Name:  "regex",
-		})
-		return g
+		grammar := &proto.Grammar{
+			Base: f.Regex,
+			Groups: []*proto.GroupElement{
+				{Regex: f.Regex, Name: "regex"},
+			},
+		}
+		return grammar
 	}
-	return Grammar{}
+	return &proto.Grammar{}
 
 }
 
-func (e Fileset) Definition() EndpointDefinition {
-	return EndpointDefinition{
-		Name:         e.Grammar().String(),
-		EndpointType: EndpointTypeFileset,
-		Grammar:      e.Grammar(),
+func (e Fileset) Definition() *proto.EndpointDefinition {
+	return &proto.EndpointDefinition{
+		Name:    e.Grammar().GetBase(),
+		Type:    EndpointTypeFileset,
+		Grammar: e.Grammar(),
 	}
 }
 
-func (e Fileset) Source(ctx *RequestContext) Representation {
-	path := strings.Replace(ctx.Request.Identifier.String(), "res://", "", 1)
+func (e Fileset) Source(ctx *RequestContext) interface{} {
+	path := strings.Replace(ctx.Request().Identifier().String(), "res:/", "", 1)
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return NewRepresentation(&proto.ErrorMessage{Message: err.Error()})
 	}
 	return string(data)
 }

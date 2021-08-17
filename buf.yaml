@@ -1,0 +1,23 @@
+# For lint, we recommend having the single value "DEFAULT" in "use"
+# with no values in "except".
+# For breaking, we recommend having the single value "FILE" in use.
+# See https://docs.buf.build/lint-usage
+# See https://docs.buf.build/breaking-usage
+version: v1beta1
+build:
+  roots:
+    - .
+lint:
+  use:
+    - DEFAULT
+    - COMMENT_MESSAGE
+    - COMMENT_SERVICE
+  except:
+    # TODO: consider uniqueue names instead of RequestContext and Representation
+    - RPC_REQUEST_STANDARD_NAME
+    - RPC_RESPONSE_STANDARD_NAME
+    - RPC_REQUEST_RESPONSE_UNIQUE
+    - SERVICE_SUFFIX
+breaking:
+  use:
+    - FILE

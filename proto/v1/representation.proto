@@ -1,0 +1,13 @@
+syntax = "proto3";
+package proto.v1;
+
+option go_package = "github.com/treethought/roc/proto/v1";
+
+import "google/protobuf/any.proto";
+
+// Representation is a concrete view of the information modeled by a resource
+// A resource representation captures the estimation of a resource state and may be provided as different types
+message Representation {
+	google.protobuf.Any value = 1;
+}
+

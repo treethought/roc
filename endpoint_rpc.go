@@ -105,7 +105,8 @@ type EndpointRPCServer struct {
 }
 
 func (s *EndpointRPCServer) Source(ctx *RequestContext, resp *Representation) error {
-	*resp = s.Impl.Source(ctx)
+	res := s.Impl.Source(ctx)
+	*resp = NewRepresentation(res)
 	return nil
 }
 func (s *EndpointRPCServer) Sink(ctx *RequestContext, resp *interface{}) error {

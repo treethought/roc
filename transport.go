@@ -5,7 +5,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -13,7 +13,7 @@ import (
 const EndpointTypeTransport string = "transport"
 
 type InitTransport struct {
-	Scope RequestScope
+	Scope *proto.RequestScope
 }
 
 // EndpointTransport is an endpoint that issues external events into the roc system
@@ -27,8 +27,8 @@ type Transport interface {
 // This type is useful for embedding custom implementations of EndpointTransport
 // and automatically handles scope initialization
 type TransportImpl struct {
-	*Accessor
-	Scope      RequestScope
+	BaseEndpoint
+	Scope      *proto.RequestScope
 	OnInit     func() error
 	Dispatcher Dispatcher
 }
@@ -36,18 +36,16 @@ type TransportImpl struct {
 func NewTransport(name string) *TransportImpl {
 	// this is done inside the transport plugin
 	return &TransportImpl{
-		Accessor:   NewAccessor(name),
-		Scope:      RequestScope{},
+		Scope:      &proto.RequestScope{},
 		OnInit:     func() error { return nil },
 		Dispatcher: NewCoreDispatcher(),
 	}
 }
 
 func (t *TransportImpl) Init(msg *InitTransport) error {
-	log.Debug("initializing transport scope")
+	log.Debug("initializing transport scope", "size", len(msg.Scope.Spaces))
 	t.Scope = msg.Scope
 	log.Info("transporter has been initialized")
-	log.Trace("transporter scope", "scope", t.Scope)
 	return t.OnInit()
 }
 
@@ -60,11 +58,11 @@ func (t *TransportImpl) Dispatch(ctx *RequestContext) (Representation, error) {
 		ctx.InjectSpace(s)
 	}
 
-	ctx.Scope = t.Scope
+	ctx.m.Scope = t.Scope
 
 	log.Debug("dispatching request from transport",
-		"identifier", ctx.Request.Identifier,
-		"num_spaces", len(ctx.Scope.Spaces),
+		"identifier", ctx.Request().Identifier,
+		"num_spaces", len(ctx.m.Scope.Spaces),
 	)
 
 	return t.Dispatcher.Dispatch(ctx)

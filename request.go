@@ -1,46 +1,65 @@
 package roc
 
 import (
-	"net/http"
+	proto "github.com/treethought/roc/proto/v1"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // Request represents request for a resouce
 type Request struct {
-	Identifier          Identifier
-	Verb                Verb
-	RepresentationClass RepresentationClass
-	Arguments           map[string][]string
-	Headers             http.Header
+	m *proto.Request
 }
 
-func NewRequest(i Identifier, verb Verb, class RepresentationClass) *Request {
+func NewRequest(i Identifier, verb proto.Verb, class RepresentationClass) *Request {
+	classStr := ""
+	if class != "" {
+		classStr = class.String()
+	}
+
 	return &Request{
-		Identifier:          i,
-		Verb:                verb,
-		RepresentationClass: class,
-		Arguments:           make(map[string][]string),
+		m: &proto.Request{
+			Identifier:          i.String(),
+			Verb:                verb,
+			RepresentationClass: classStr,
+			Arguments:           make(map[string]*proto.StringSlice),
+			ArgumentValues:      make(map[string]*anypb.Any),
+		},
 	}
 }
 
-// SetRepresentationClass sets the desired format of the representation response
-func (r *Request) SetRepresentationClass(class RepresentationClass) {
-	r.RepresentationClass = class
+func (r *Request) Identifier() Identifier {
+	return NewIdentifier(r.m.Identifier)
 }
 
-// // Identifier returns the identifier of the requested resource
-// func (r Request) Identifier() Identifier {
-// 	return r.identifier
-// }
+func (r *Request) Verb() proto.Verb {
+	return r.m.Verb
+}
 
-// // Verb returns the specified action to be taken when evaluating the request
-// func (r Request) Verb() Verb {
-// 	return r.verb
-// }
+// SetRepresentationClass sets the desired format of the representation response
+func (r *Request) SetRepresentationClass(class string) {
+	r.m.RepresentationClass = class
+}
 
-// func (r *Request) Headers() http.Header {
-// 	return r.headers
-// }
+// SetArgument sets the value of an argument to an identifier
+// The argument's representation can then be sources during evalutation
+// This replaces any existing values, to append an identifier, use AddArgument
+func (r *Request) SetArgument(name string, i Identifier) {
+	r.m.Arguments[name] = &proto.StringSlice{
+		Values: []string{i.String()},
+	}
+}
 
-// func (r Request) Arguments() url.Values {
-// 	return r.argmuments
-// }
+// AddArgument appends an identifier to any existing ones for the named arguement
+func (r *Request) AddArgument(name string, i Identifier) {
+	_, exists := r.m.Arguments[name]
+	if !exists {
+		r.m.Arguments[name] = &proto.StringSlice{}
+	}
+	r.m.Arguments[name].Values = append(r.m.Arguments[name].Values, i.String())
+}
+
+func (r *Request) SetArgumentByValue(name string, val Representation) {
+	log.Info("setting argument value", "arg", name, "type", val.Type())
+	r.m.ArgumentValues[name] = val.any()
+
+}

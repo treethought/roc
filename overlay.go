@@ -2,6 +2,9 @@ package roc
 
 import (
 	"fmt"
+	"strings"
+
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 var EndpointTypeTransparentOverlay = "transparentOverlay"
@@ -12,19 +15,19 @@ type Overlay interface {
 
 type TransparentOverlay struct {
 	BaseEndpoint
-	Space      Space
+	grammar    *proto.Grammar
+	Space      *proto.Space
 	onRequest  func(ctx *RequestContext)
 	onResponse func(ctx *RequestContext, resp Representation)
-	Dispatcher Dispatcher
 }
 
-func NewTransparentOverlay(ed EndpointDefinition) TransparentOverlay {
+func NewTransparentOverlay(ed *proto.EndpointDefinition) TransparentOverlay {
 	return TransparentOverlay{
 		BaseEndpoint: BaseEndpoint{},
 		Space:        ed.Space,
+		grammar:      ed.Grammar,
 		onRequest:    func(ctx *RequestContext) {},
 		onResponse:   func(ctx *RequestContext, resp Representation) {},
-		Dispatcher:   NewCoreDispatcher(),
 	}
 }
 
@@ -32,67 +35,51 @@ func (e TransparentOverlay) Type() string {
 	return EndpointTypeTransparentOverlay
 }
 
-func (o TransparentOverlay) sourceURI(ctx *RequestContext) (string, error) {
-	uriRefs, ok := ctx.Request.Arguments["uri"]
-	if !ok {
-		return "", fmt.Errorf("uri argument not in context")
-	}
-
-	refIdentifier := Identifier(uriRefs[0])
-	log.Debug("obtained reference arg", "ref", refIdentifier)
-
-	uri, err := ctx.Source(refIdentifier, nil)
-	if err != nil {
-		log.Error("failed to source uri argument")
-		return "", err
-	}
-	return fmt.Sprint(uri), nil
-}
-
-func (o TransparentOverlay) Evaluate(ctx *RequestContext) Representation {
+func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {
 	// transparent hook, cannot modify response
-	log.Warn("-------------------------------------")
+	log.Warn("overlay evaluating request", "identifier", ctx.Request().Identifier())
 
 	o.onRequest(ctx)
 
-	log.Info("overlay handling request", "identifier", ctx.Request.Identifier)
-
-	uri, err := o.sourceURI(ctx)
+	uri, err := ctx.GetArgumentValue("uri")
 	if err != nil {
+		log.Error("failed to source uri argument representation", "err", err)
+		return err
+	}
+
+	m := new(proto.String)
+	err = uri.To(m)
+	if err != nil {
+		log.Error("fialed to convert uri to string", "err", err)
 		return err
 	}
 
 	// reformat the identifier for context of wrapped space
-	// build new res:// scheme from overlay prefix's root
-	// i.e. res://my-app/helloworld -> uri=/helloworld -> res://helloworld
-	id := Identifier(fmt.Sprintf("res:/%s", uri))
+	// build new uri scheme from overlay prefix's root
+	// i.e. res://app/helloworld -> uri=/helloworld -> res://helloworld
+	relUri := strings.Replace(m.GetValue(), o.grammar.GetBase(), "", 1)
+	id := NewIdentifier(fmt.Sprintf("res:/%s", relUri))
+	log.Warn("formatted identifier for wrapped space", "uri", m.GetValue(), "id", id)
 
-	log.Info("issuing request to wrapped space", "identifier", id)
-
-	log.Debug("initial scope", "size", len(ctx.Scope.Spaces))
-
-	// inject the wrappes space into the request scope
-	// we don't create a new request, because this is transparent.
-	// we just issue requests into our wrapped space which is otherwise
+	// inject the wrapped space into the request scope and
+	// issue request into our wrapped space which is otherwise
 	// unavailable to outside of the overlay
 
-	// we also replace the existing scope completely, to prevent resolving to this overlay in a loop
-	log.Debug("injecting wrapped space", "space", o.Space.Identifier, "size", len(o.Space.EndpointDefinitions))
 	ctx.InjectSpace(o.Space)
 
-	ctx.Request = NewRequest(id, ctx.Request.Verb, ctx.Request.RepresentationClass)
+	req := ctx.CreateRequest(id)
+	req.m.Verb = ctx.Request().m.Verb
+	req.SetRepresentationClass(ctx.Request().m.RepresentationClass)
 
-	log.Debug("new scope", "spaces", len(ctx.Scope.Spaces), "size", len(ctx.Scope.Spaces[0].EndpointDefinitions))
-
-	// forward the request into our wrapped space
-	resp, err := o.Dispatcher.Dispatch(ctx)
+	log.Info("issuing request to wrapped space", "identifier", id)
+	resp, err := ctx.IssueRequest(req)
 	if err != nil {
-		panic(err)
+		log.Error("failed to issue request into wrapped space", "err", err)
+		return err
 	}
 
 	// transparent hook, cannot modify response
 	o.onResponse(ctx, resp)
-	log.Warn("-------------------------------------")
 
 	return resp
 }

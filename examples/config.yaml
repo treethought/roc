@@ -1,52 +1,110 @@
 spaces:
-- identifier: space://myspace
-  endpoints:
+  # the rootspace containing all of our resources
+  # we refer to it as a fulcrum because it contains a transport
+  - identifier: space://my-fulcrum
+    endpoints:
+      # our space of resources accessible via http transport
 
-  - name: exposed
-    type: transient
-    literal: "IM EXPOSED"
-    grammar:
-      base: "res://exposed"
+      # TODO: support for top-level yaml fields like transport/accessor
+      #
+      #
+      # ourt http transport, which receives external http requests
+      # and issues them as root requests into the system
+      - name: http-transport
+        type: transport
+        cmd: ./bin/std/transport
+        # prototype: github.com/treethought/roc/std/transport/http
 
+        # http bridge overlay, which translates http requests
+        # into the roc address space
+        # this abstracts the processing of httpRequest and httpResponse
+        #
+        # The overlay handles requests issued to the httpRequest: and httpResponse: spaces and
+        # maps them to the low-level underlying HTTPRequest and HTTPResponse objects
+        # provided by the transport. See the overview for a diagram and general perspective.
+      - name: http-overlay
+        type: httpBridge
+        grammar:
+          base: "http://app/"
+          groups:
+            - name: path
+              regex: ".*"
 
-  - name: overlaytest
-    type: transparentOverlay
-    grammar:
-      base: "res://app"
-      # TODO abstract this away
-      groups:
-        - name: uri
-          regex: ".*"
-    space:
-      identifier: space://my-wrapped
-      endpoints:
-        - name: namer
-          type: accessor
-          cmd: ./bin/namer
-          grammar:
-            base: res://name/
-            groups:
-              - name: nameArg
-                regex: ".*"
+        config:
+          rewrite:
+            match: "http://.*?/(.*)"
+            to: "res:/$1"
 
-        - name: myfiles
-          type: fileset
-          grammar:
-            base: "res://std/"
-            groups:
-              - name: path
-                regex: ".*"
+        # the space wrapped by the http overlay
+        # overlay provides the http request/response to these endpoints
+        # via the dynamically created value space
+        space:
+          identifier: space://appspace
 
-        - name: example-files
-          type: fileset
-          grammar:
-            base: "res://examples/"
-            groups:
-              - name: path
-                regex: ".*"
+          # a dummy "exposed" endpoint
+          # an example to show an endpoint for which requests
+          # are not processed by the overlay below
+          #
+          endpoints:
+            - name: exposed
+              type: transient
+              # literal: "IM EXPOSED"
+              grammar:
+                base: "res://exposed"
 
-        - name: greeter
-          type: accessor
-          grammar:
-            base: res://hello
-          cmd: ./bin/greeter
+            - name: docs
+              type: fileset
+              grammar:
+                base: "res:/doc/"
+                groups:
+                  - name: path
+                    regex: ".*"
+
+            # am overlay mapping to a set of resources
+            # that can do things based on roc request/response
+            - name: overlaytest
+              type: transparentOverlay
+              grammar:
+                base: "res:/app/"
+                # TODO abstract this away
+                groups:
+                  - name: uri
+                    regex: ".*"
+              space:
+                identifier: space:/my-wrapped
+                endpoints:
+                  - name: greeter
+                    type: accessor
+                    grammar:
+                      base: res:/hello/
+                      groups:
+                        - name: name
+                          regex: ".*"
+                    cmd: ./bin/greeter
+
+                  - name: upper
+                    type: accessor
+                    cmd: ./bin/upper
+                    grammar:
+                      active:
+                        identifier: res:/active:toUpper
+                        arguments:
+                          - name: value
+                            min: 1
+
+                  - name: myfiles
+                    type: fileset
+                    grammar:
+                      base: "res:/std/"
+                      groups:
+                        - name: path
+                          regex: ".*"
+
+                  - name: example-files
+                    type: fileset
+                    grammar:
+                      base: "res://examples/"
+                      groups:
+                        - name: path
+                          regex: ".*"
+

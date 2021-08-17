@@ -17,14 +17,6 @@ type PhysicalEndpoint struct {
 }
 
 func Serve(e Endpoint) {
-	a, ok := e.(Accessor)
-	if ok {
-		log.Debug("starting accessor",
-			"name", a.Name,
-			"identifier", a.Identifier(),
-		)
-	}
-
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{
 		"endpoint": &EndpointPlugin{Impl: e},

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 type Dispatcher interface {
@@ -16,46 +17,56 @@ func NewCoreDispatcher() *CoreDispatcher {
 	return &CoreDispatcher{}
 }
 
-func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) EndpointDefinition {
-	log.Info("resolving request", "identifier", ctx.Request.Identifier)
+func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointDefinition {
+	log.Debug("resolving request", "identifier", ctx.Request().Identifier().String())
 
-	c := make(chan (EndpointDefinition))
-	for _, s := range ctx.Scope.Spaces {
-		log.Debug("checking space: ", "space", s.Identifier)
-		go s.Resolve(ctx, c)
-	}
+	c := make(chan (*proto.EndpointDefinition))
 
-	return <-c
+	go func() {
+		for _, s := range ctx.m.Scope.Spaces {
+			log.Trace("checking space: ", "space", s.Identifier)
+			ed, ok := resolveToEndpoint(s, ctx)
+			if ok {
+				c <- ed
+			}
+		}
+	}()
+	ed := <-c
+
+	return ed
 
 }
 
-func injectArguments(ctx *RequestContext, e EndpointDefinition) {
-	log.Debug("injecting arguments into request context")
-	args := e.Grammar.Parse(ctx.Request.Identifier)
-
+func newTransientSpace(endpoints ...*proto.EndpointDefinition) *proto.Space {
 	uid := uuid.New()
 	spaceID := fmt.Sprintf("dynamic-space://%s", uid.String())
 
-	refArgs := make(map[string][]string)
+	id := NewIdentifier(spaceID)
+	space := NewSpace(id, endpoints...)
+	return space
+}
 
-	transientDefs := []EndpointDefinition{}
+func injectParsedArgs(ctx *RequestContext, e *proto.EndpointDefinition) {
+	args := parseGrammar(e.Grammar, ctx.Request().Identifier().String())
+	log.Info("injecting parsed grammar args", "args", args)
+
 	for k, v := range args {
-		refArgs[k] = []string{}
+		// TODO parse for identifier better
+		// if strings.Contains(v[0], ":/") {
+		// 	log.Warn("parsed arg is already identifier", "arg", k, "val", v[0])
+		// 	ctx.Request().SetArgument(k, NewIdentifier(v[0]))
+		// 	continue
+		// }
 
-		// TODO better way?
-		for _, val := range v {
-			log.Debug("creating transient argument endpoint", "arg", k, "val", val)
-			endpoint := NewTransientEndpoint(val)
-			transientDefs = append(transientDefs, endpoint.Definition())
-
-			refArgs[k] = append(refArgs[k], endpoint.Identifier().String())
-			log.Debug("set argument refernece", "name", k, "ref", endpoint.Identifier().String())
+		// TODO: not overwriting arguments already added to the request
+		// might want to change this
+		_, exists := ctx.Request().m.ArgumentValues[k]
+		if !exists {
+			log.Trace("injecting grammar argument ", "arg", k, "val", v[0])
+			rep := NewRepresentation(v[0])
+			ctx.Request().SetArgumentByValue(k, rep)
 		}
 	}
-
-	dynamicSpace := NewSpace(Identifier(spaceID), transientDefs...)
-	ctx.InjectSpace(dynamicSpace)
-	ctx.Request.Arguments = refArgs
 
 	// TODO
 
@@ -75,21 +86,24 @@ func injectArguments(ctx *RequestContext, e EndpointDefinition) {
 }
 
 func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
-	log.Warn("dispatching request",
-		"identifier", ctx.Request.Identifier,
-		"scope_size", len(ctx.Scope.Spaces),
-		"verb", ctx.Request.Verb,
+	log.Info("dispatching request",
+		"identifier", ctx.Request().Identifier().String(),
+		"scope_size", len(ctx.m.Scope.Spaces),
+		"verb", ctx.Request().m.Verb,
+		"arguments", ctx.Request().m.Arguments,
 	)
 
 	ed := d.resolveEndpoint(ctx)
-	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type())
+	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type)
 	log.Trace(fmt.Sprintf("%+v", ed))
 
-	injectArguments(ctx, ed)
+	injectParsedArgs(ctx, ed)
+
+	ctx.injectValueSpace(ctx.Request())
 
 	var endpoint Endpoint
 
-	switch ed.Type() {
+	switch ed.Type {
 	case EndpointTypeTransient:
 		endpoint = NewTransientEndpoint(ed.Literal)
 
@@ -103,9 +117,17 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		overlay := NewTransparentOverlay(ed)
 		endpoint = overlay
 
+	case OverlayTypeHTTPBridge:
+		overlay := NewHTTPBridgeOverlay(ed)
+		endpoint = overlay
+
+	case EndpointTypeHTTPRequestAccessor:
+		overlay := NewHttpRequestEndpoint(ed)
+		endpoint = overlay
+
 	default:
 		log.Error("Unknown endpoint type", "endpoint", ed)
-		return nil, fmt.Errorf("unknown endpoint type")
+		return NewRepresentation(nil), fmt.Errorf("unknown endpoint type")
 	}
 
 	phys, ok := endpoint.(PhysicalEndpoint)
@@ -113,17 +135,21 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		defer phys.Client.Kill()
 	}
 
-	log.Info("evaluating request",
-		"identifier", ctx.Request.Identifier,
-		"verb", ctx.Request.Verb,
+	log.Trace("evaluating request",
+		"identifier", ctx.Request().Identifier(),
+		"verb", ctx.Request().m.Verb,
+		"ed_type", ed.Type,
 	)
 	rep := Evaluate(ctx, endpoint)
 
+	repr := NewRepresentation(rep)
+
 	// TODO route verbs to methods
 	// rep := endpoint.Source(ctx)
-	log.Warn("dispatch received response",
-		"identifier", ctx.Request.Identifier,
-		"representation", rep,
+	log.Info("dispatch received response",
+		"identifier", ctx.Request().Identifier().String(),
+		"representation", repr.Type(),
 	)
-	return rep, nil
+	log.Info(repr.String())
+	return repr, nil
 }

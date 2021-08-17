@@ -1,0 +1,68 @@
+syntax = "proto3";
+package proto.v1;
+
+option go_package = "github.com/treethought/roc/proto/v1";
+
+import "proto/v1/space.proto";
+import "proto/v1/request.proto";
+import "proto/v1/common.proto";
+import "proto/v1/representation.proto";
+
+
+
+// RequestScope represents the set of address spaces to which
+// a request can be resolved and evaluated. The scope may be dynamically
+// modified by overlays.
+message RequestScope {
+	repeated proto.v1.Space spaces = 1;
+}
+
+// RequestContext is the primary message exchanged across roc components.
+// It contains the issued Request as well as the RequestScope, which determines
+// to which endpoint the request may be resolved and evaluated
+message RequestContext {
+	proto.v1.Request request = 1;
+	RequestScope scope = 3;
+}
+
+// InitTransport contains bootstrapping information for an external transport.
+// It is primarily used to deliver the transport's initial scope, so that it may
+// issue requests into the system.
+message InitTransport {
+	RequestScope scope = 1;
+}
+
+
+/* service Dispatcher { */
+/* 	rpc Dispatch(RequestContext) returns (Representation); */
+/* } */
+
+
+// Endpoint represents the physical process that models a Resource.
+// Endpoints are bound to a logical address space via their Grammar,
+// and may expose a resource or act as a service resource. In any case,
+// an Physical endpoint is a component which can issue and process requests.
+// From the logical perspective, an endpoint exposes capability into an address space.
+service Endpoint {
+	rpc Source(RequestContext) returns (Representation);
+	rpc Sink(RequestContext) returns (proto.v1.Empty);
+	rpc New(RequestContext) returns (proto.v1.IdentifierResponse);
+	rpc Delete(RequestContext) returns (BoolResponse);
+	rpc Exists(RequestContext) returns (BoolResponse);
+
+}
+
+// A transport is a type of endpoint that acts as an external event detector.
+// A transport resides at the edge of an application, listening for external events to occue
+// In response to an external event, a transport issues a request into the space hosting it.
+// An example of a transport is an HTTP transport, which consists of an HTTP server that responds to HTTP requests
+// by returning ROC representations to the client as HTTP responses.
+service Transport {
+	rpc Init(InitTransport) returns (Empty);
+	/* rpc Evaluate(RequestContext) returns (Representation); */
+	rpc Source(RequestContext) returns (Representation);
+	rpc Sink(RequestContext) returns (Empty);
+	rpc New(RequestContext) returns (IdentifierResponse);
+	rpc Delete(RequestContext) returns (BoolResponse);
+	rpc Exists(RequestContext) returns (BoolResponse);
+}

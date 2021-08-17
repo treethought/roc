@@ -6,6 +6,8 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/treethought/roc"
+	proto "github.com/treethought/roc/proto/v1"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var log = hclog.Default()
@@ -14,14 +16,36 @@ type HttpTransport struct {
 	*roc.TransportImpl
 }
 
+func getAsHttpRequest(rep roc.Representation) (*proto.HttpRequest, error) {
+	// TODO: this needs to be handled with response vlass behnd the scenes
+	any, err := anypb.New(rep)
+	if err != nil {
+		return nil, err
+	}
+
+	m := new(proto.HttpRequest)
+	err = any.UnmarshalTo(m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
-	identifier := roc.Identifier(fmt.Sprintf("res:/%s", req.URL.Path))
-	log.Info("mapped http request to identifier", "identifier", identifier)
+	identifier := roc.NewIdentifier(fmt.Sprintf("http:/%s", req.URL.String()))
+	log.Info("transport received request", "identifier", identifier, "url", req.URL.String())
 
-	// TODO refactor to use roc.Source()?
+	ctx := roc.NewRequestContext(identifier, proto.Verb_VERB_SOURCE)
 
-	ctx := roc.NewRequestContext(identifier, roc.Source)
-	// ctx.Scope = t.Scope
+	// create dynamic httpRequest accessor that will provide acess to http request
+	// rep := roc.NewHttpRequestDefinition(req)
+	rep := roc.NewHttpRequestMessage(req)
+
+	repr := roc.NewRepresentation(rep)
+
+	log.Info("setting httpRequest request arg value")
+	ctx.Request().SetArgumentByValue("httpRequest", repr)
+	// ctx.Request.SetArgumentByValue("httpResponse", w)
 
 	resp, err := t.Dispatch(ctx)
 	if err != nil {
@@ -30,9 +54,15 @@ func (t HttpTransport) handler(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	r := fmt.Sprintf("%+v", resp)
-	log.Info("returning response to http client", "response", r)
-	w.Write([]byte(r))
+	m := new(proto.String)
+	err = resp.To(m)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	log.Info("returning response to http client", "response", m)
+	w.Write([]byte(m.GetValue()))
 
 }
 

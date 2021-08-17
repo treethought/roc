@@ -2,7 +2,7 @@ package roc
 
 import (
 	plugin "github.com/hashicorp/go-plugin"
-	"github.com/treethought/roc/proto"
+	proto "github.com/treethought/roc/proto/v1"
 	"golang.org/x/net/context"
 )
 
@@ -18,7 +18,7 @@ func (m *TransportGRPC) Init(msg *InitTransport) error {
 
 	protoScope := &proto.RequestScope{}
 	for _, s := range msg.Scope.Spaces {
-		protoScope.Spaces = append(protoScope.Spaces, newProtoSpace(s))
+		protoScope.Spaces = append(protoScope.Spaces, s)
 	}
 
 	protoMsg := &proto.InitTransport{Scope: protoScope}
@@ -43,12 +43,11 @@ type TransportGRPCServer struct {
 }
 
 func (m *TransportGRPCServer) Init(ctx context.Context, req *proto.InitTransport) (*proto.Empty, error) {
-	msg := &InitTransport{}
+	msg := &InitTransport{Scope: &proto.RequestScope{}}
 	for _, s := range req.Scope.Spaces {
-		msg.Scope.Spaces = append(msg.Scope.Spaces, protoToSpace(s))
+		msg.Scope.Spaces = append(msg.Scope.Spaces, s)
 	}
 	err := m.Impl.Init(msg)
-
 	return &proto.Empty{}, err
 }
 

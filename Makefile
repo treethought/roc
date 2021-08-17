@@ -7,20 +7,23 @@ build-cli:
 	go build -o ./roc ./cmd/...
 
 clean:
-	rm -rf bin/*
+	rm proto/v1/*.go || true
+	rm -rf bin/*|| true
 
 build:
-	go build -o ./bin/greeter ./examples/greeter
-	go build -o ./bin/namer ./examples/namer
+	go build -o ./bin/ ./examples/...
 	go build -o ./bin/std/ ./std/...
 
-protos:
-	rm proto/*.go || true
+protos: clean
+	buf lint
+	buf generate
+
+ protoc: clean
 	protoc --go_out=. --go_opt=paths=source_relative \
 		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
-		proto/*.proto
+		proto/v1/*.proto
 
 start:
 	go run cmd/main.go run -c examples/config.yaml
 
-run: build start
+run: protos build start

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 
 	"github.com/hashicorp/go-hclog"
+	proto "github.com/treethought/roc/proto/v1"
 	"gopkg.in/yaml.v3"
 )
 
@@ -15,58 +16,27 @@ var log = hclog.New(&hclog.LoggerOptions{
 })
 
 type SpaceDefinition struct {
-	Spaces []Space `json:"spaces" yaml:"spaces"`
+	Spaces []*proto.Space `json:"spaces" yaml:"spaces"`
 }
 
-type EndpointDefinition struct {
-	Name         string         `json:"name,omitempty" yaml:"name,omitempty"`
-	Grammar      Grammar        `json:"grammar,omitempty" yaml:"grammar,omitempty"`
-	Cmd          string         `json:"cmd,omitempty" yaml:"cmd,omitempty"`
-	EndpointType string         `json:"type,omitempty" yaml:"type,omitempty"`
-	Literal      Representation `json:"literal,omitempty" yaml:"literal,omitempty"`
-
-	// TODO generalize endpoint def for any endpoint/prototype
-	Regex string `json:"regex,omitempty" yaml:"regex,omitempty"`
-	// overlay wrapped space
-	Space Space `json:"space,omitempty" yaml:"space,omitempty"`
-}
-
-func (ed EndpointDefinition) Type() string {
-	if ed.EndpointType != "" {
-		return ed.EndpointType
-	}
-	return EndpointTypeAccessor
-}
-
-type Space struct {
-	Identifier Identifier `yaml:"identifier,omitempty" json:"identifier,omitempty"`
-	Imports    []Space    `yaml:"imports,omitempty" json:"imports,omitempty"`
-	// use identifier instead of string, should reference
-	// plugin binaries as a res:// or file://
-	EndpointDefinitions []EndpointDefinition `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
-}
-
-func NewSpace(identifier Identifier, endpoints ...EndpointDefinition) Space {
-	s := Space{
-		Identifier:          identifier,
-		Imports:             []Space{},
-		EndpointDefinitions: endpoints,
+func NewSpace(identifier Identifier, endpoints ...*proto.EndpointDefinition) *proto.Space {
+	space := &proto.Space{
+		Identifier: identifier.String(),
+		Imports:    []*proto.Space{},
+		Endpoints:  endpoints,
 	}
 
-	log.Debug("created space", "identifier", s.Identifier, "endpoints", len(s.EndpointDefinitions))
-	return s
+	log.Debug("created space", "identifier", space.GetIdentifier(), "endpoints", len(space.GetEndpoints()))
+	return space
 }
 
-func (s *Space) BindEndpoint(e EndpointDefinition) {
-	s.EndpointDefinitions = append(s.EndpointDefinitions, e)
-}
-
-func LoadSpaces(path string) ([]Space, error) {
+func LoadSpaces(path string) ([]*proto.Space, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Error("failed to read config file", "error", err)
-		return []Space{}, nil
+		return []*proto.Space{}, nil
 	}
+	// jsonBytes, _ := json.Unmarshal(data)
 
 	def := SpaceDefinition{}
 	err = yaml.Unmarshal(data, &def)
@@ -74,22 +44,27 @@ func LoadSpaces(path string) ([]Space, error) {
 		log.Error("failed to parse space definition", err)
 		return def.Spaces, fmt.Errorf("failed to parse space definitions")
 	}
+
+	out, _ := yaml.Marshal(def)
+	fmt.Println(string(out))
+
 	return def.Spaces, nil
 
 }
 
-func canResolve(ctx *RequestContext, e EndpointDefinition) bool {
-	log.Debug("checking grammar", "grammar", e.Grammar.String(), "identifier", ctx.Request.Identifier)
+func canResolve(ctx *RequestContext, e *proto.EndpointDefinition) bool {
 	log.Trace(fmt.Sprintf("%+v", e))
-	resolve := e.Grammar.Match(ctx.Request.Identifier)
-	return resolve
+	if e.Type == "transport" {
+		return false
+	}
 
+	return matchGrammar(e.Grammar, ctx.m.Request.Identifier)
 }
 
-func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
-	for _, ed := range s.EndpointDefinitions {
-		log.Debug("interrogating endpoint",
-			"space", s.Identifier,
+func resolveToEndpoint(s *proto.Space, ctx *RequestContext) (*proto.EndpointDefinition, bool) {
+	for _, ed := range s.GetEndpoints() {
+		log.Trace("interrogating endpoint",
+			"space", s.GetIdentifier(),
 			"endpoint", ed.Name,
 		)
 		// TODO match grammar in endpoint or in space?
@@ -97,8 +72,8 @@ func (s Space) Resolve(ctx *RequestContext, c chan (EndpointDefinition)) {
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
 			log.Debug("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
-			c <- ed
-			close(c)
+			return ed, true
 		}
 	}
+	return &proto.EndpointDefinition{}, false
 }

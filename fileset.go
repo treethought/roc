@@ -11,12 +11,13 @@ const EndpointTypeFileset string = "fileset"
 
 type Fileset struct {
 	BaseEndpoint
-	Regex   string
-	grammar *proto.Grammar
-	Mutable bool
+	Regex      string
+	grammar    *proto.Grammar
+	Mutable    bool
+	Identifier string
 }
 
-func NewFilesetRegex(rx string) Fileset {
+func NewFilesetRegex(id string, rx string) Fileset {
 	grammar := &proto.Grammar{
 		Base: rx,
 		Groups: []*proto.GroupElement{
@@ -28,6 +29,7 @@ func NewFilesetRegex(rx string) Fileset {
 		BaseEndpoint: BaseEndpoint{},
 		grammar:      grammar,
 		Mutable:      false,
+		Identifier:   id,
 	}
 }
 
@@ -49,11 +51,12 @@ func (f Fileset) Grammar() *proto.Grammar {
 
 }
 
-func (e Fileset) Definition() *proto.EndpointDefinition {
-	return &proto.EndpointDefinition{
-		Name:    e.Grammar().GetBase(),
-		Type:    EndpointTypeFileset,
-		Grammar: e.Grammar(),
+func (e Fileset) Definition() *proto.EndpointMeta {
+
+	return &proto.EndpointMeta{
+		Identifier: e.Identifier,
+		Type:       EndpointTypeFileset,
+		Grammar:    e.Grammar(),
 	}
 }
 

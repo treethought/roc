@@ -37,12 +37,12 @@ func NewTransientEndpoint(rep *proto.Representation) TransientEndpoint {
 	}
 }
 
-func (e *TransientEndpoint) Definition() *proto.EndpointDefinition {
-	return &proto.EndpointDefinition{
-		Name:    e.Grammar.GetBase(),
-		Type:    EndpointTypeTransient,
-		Grammar: e.Grammar,
-		Literal: e.Representation.message(),
+func (e *TransientEndpoint) Definition() *proto.EndpointMeta {
+	return &proto.EndpointMeta{
+		Identifier: e.Grammar.GetBase(),
+		Type:       EndpointTypeTransient,
+		Grammar:    e.Grammar,
+		Literal:    e.Representation.message(),
 	}
 }
 

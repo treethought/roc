@@ -36,7 +36,7 @@ func NewKernel() *Kernel {
 	return k
 }
 
-func (k Kernel) startTransport(ed *proto.EndpointDefinition) (PhysicalTransport, error) {
+func (k Kernel) startTransport(ed *proto.EndpointMeta) (PhysicalTransport, error) {
 	k.logger.Info("creating http transport")
 	httpt := NewPhysicalTransport(ed.Cmd)
 

@@ -19,7 +19,7 @@ type SpaceDefinition struct {
 	Spaces []*proto.Space `json:"spaces" yaml:"spaces"`
 }
 
-func NewSpace(identifier Identifier, endpoints ...*proto.EndpointDefinition) *proto.Space {
+func NewSpace(identifier Identifier, endpoints ...*proto.EndpointMeta) *proto.Space {
 	space := &proto.Space{
 		Identifier: identifier.String(),
 		Imports:    []*proto.Space{},
@@ -52,7 +52,7 @@ func LoadSpaces(path string) ([]*proto.Space, error) {
 
 }
 
-func canResolve(ctx *RequestContext, e *proto.EndpointDefinition) bool {
+func canResolve(ctx *RequestContext, e *proto.EndpointMeta) bool {
 	log.Trace(fmt.Sprintf("%+v", e))
 	if e.Type == "transport" {
 		return false
@@ -61,19 +61,19 @@ func canResolve(ctx *RequestContext, e *proto.EndpointDefinition) bool {
 	return matchGrammar(e.Grammar, ctx.m.Request.Identifier)
 }
 
-func resolveToEndpoint(s *proto.Space, ctx *RequestContext) (*proto.EndpointDefinition, bool) {
+func resolveToEndpoint(s *proto.Space, ctx *RequestContext) (*proto.EndpointMeta, bool) {
 	for _, ed := range s.GetEndpoints() {
 		log.Trace("interrogating endpoint",
 			"space", s.GetIdentifier(),
-			"endpoint", ed.Name,
+			"endpoint", ed.Identifier,
 		)
 		// TODO match grammar in endpoint or in space?
 		// e := NewPhysicalEndpoint(ed.Cmd)
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
-			log.Debug("resolve affirmed", "endpoint_name", ed.Name, "cmd", ed.Cmd)
+			log.Debug("resolve affirmed", "endpoint_name", ed.Identifier, "cmd", ed.Cmd)
 			return ed, true
 		}
 	}
-	return &proto.EndpointDefinition{}, false
+	return &proto.EndpointMeta{}, false
 }

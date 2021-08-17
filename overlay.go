@@ -21,7 +21,7 @@ type TransparentOverlay struct {
 	onResponse func(ctx *RequestContext, resp Representation)
 }
 
-func NewTransparentOverlay(ed *proto.EndpointDefinition) TransparentOverlay {
+func NewTransparentOverlay(ed *proto.EndpointMeta) TransparentOverlay {
 	return TransparentOverlay{
 		BaseEndpoint: BaseEndpoint{},
 		Space:        ed.Space,
@@ -33,6 +33,14 @@ func NewTransparentOverlay(ed *proto.EndpointDefinition) TransparentOverlay {
 
 func (e TransparentOverlay) Type() string {
 	return EndpointTypeTransparentOverlay
+}
+
+func (e TransparentOverlay) SetOnRequest(f func(ctx *RequestContext)) {
+	e.onRequest = f
+}
+
+func (e TransparentOverlay) SetOnResponse(f func(ctx *RequestContext, resp Representation)) {
+	e.onResponse = f
 }
 
 func (o TransparentOverlay) Evaluate(ctx *RequestContext) interface{} {

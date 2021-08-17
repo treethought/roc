@@ -6,12 +6,11 @@ option go_package = "github.com/treethought/roc/proto/v1";
 import "proto/v1/representation.proto";
 import "proto/v1/grammar.proto";
 
-// EndpointDefinition represents the binding of a logical
+// EndpointMeta represents the binding of a logical
 // endpont to it's physical implementation.*/
-// The implementation may a command for an accessor or a literal representation */
-message EndpointDefinition {
-	// name is a friendly name of the endpoint
-	string name   = 1; 
+// The implementation may be a command for an accessor or a literal representation */
+message EndpointMeta {
+	string identifier = 1;
 	proto.v1.Grammar grammar = 2;
 	string cmd = 3;
 	string type = 4;
@@ -35,6 +34,6 @@ message EndpointDefinition {
 message Space {
 	string identifier = 1;
 	repeated Space imports = 2;
-	repeated EndpointDefinition endpoints = 3 [json_name="endpoints"];
+	repeated EndpointMeta endpoints = 3 [json_name="endpoints"];
 }
 

@@ -10,7 +10,7 @@ spaces:
       #
       # ourt http transport, which receives external http requests
       # and issues them as root requests into the system
-      - name: http-transport
+      - identifier: http-transport
         type: transport
         cmd: ./bin/std/transport
         # prototype: github.com/treethought/roc/std/transport/http
@@ -22,7 +22,7 @@ spaces:
         # The overlay handles requests issued to the httpRequest: and httpResponse: spaces and
         # maps them to the low-level underlying HTTPRequest and HTTPResponse objects
         # provided by the transport. See the overview for a diagram and general perspective.
-      - name: http-overlay
+      - identifier: http-overlay
         type: httpBridge
         grammar:
           base: "http://app/"
@@ -46,13 +46,13 @@ spaces:
           # are not processed by the overlay below
           #
           endpoints:
-            - name: exposed
+            - identifier: exposed
               type: transient
               # literal: "IM EXPOSED"
               grammar:
                 base: "res://exposed"
 
-            - name: docs
+            - identifier: files:docs
               type: fileset
               grammar:
                 base: "res:/doc/"
@@ -62,7 +62,7 @@ spaces:
 
             # am overlay mapping to a set of resources
             # that can do things based on roc request/response
-            - name: overlaytest
+            - identifier: overlay:test
               type: transparentOverlay
               grammar:
                 base: "res:/app/"
@@ -73,7 +73,7 @@ spaces:
               space:
                 identifier: space:/my-wrapped
                 endpoints:
-                  - name: greeter
+                  - identifier: example:greeter
                     type: accessor
                     grammar:
                       base: res:/hello/
@@ -82,7 +82,7 @@ spaces:
                           regex: ".*"
                     cmd: ./bin/greeter
 
-                  - name: upper
+                  - identifier: example:upper
                     type: accessor
                     cmd: ./bin/upper
                     grammar:
@@ -92,7 +92,7 @@ spaces:
                           - name: value
                             min: 1
 
-                  - name: myfiles
+                  - identifier: files:std
                     type: fileset
                     grammar:
                       base: "res:/std/"
@@ -100,7 +100,7 @@ spaces:
                         - name: path
                           regex: ".*"
 
-                  - name: example-files
+                  - identifier: files:example
                     type: fileset
                     grammar:
                       base: "res://examples/"

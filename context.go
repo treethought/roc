@@ -36,7 +36,7 @@ func (c *RequestContext) CreateRequest(identifier Identifier) *Request {
 }
 
 func (c *RequestContext) Scope() *proto.RequestScope {
-    return c.m.GetScope()
+	return c.m.GetScope()
 }
 
 // InjectSpace adds the given space to the request scope
@@ -78,7 +78,7 @@ func (c *RequestContext) injectValueSpace(req *Request) {
 	// create dynamic pass-by-value space to hold the representation
 	// we then provide the uri to the new dynamic endpoint as the arg value in the request
 
-	defs := []*proto.EndpointDefinition{}
+	defs := []*proto.EndpointMeta{}
 
 	for k, val := range req.m.ArgumentValues {
 		// create pbv endpoint to hold representation

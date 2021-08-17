@@ -43,7 +43,7 @@ func NewHttpRequestMessage(req *http.Request) *proto.HttpRequest {
 	return repr
 }
 
-func NewHttpRequestDefinition(req *http.Request) *proto.EndpointDefinition {
+func NewHttpRequestDefinition(req *http.Request) *proto.EndpointMeta {
 	log.Debug("creating new httpRequest literal definition")
 
 	repr := NewHttpRequestMessage(req)
@@ -63,17 +63,17 @@ func NewHttpRequestDefinition(req *http.Request) *proto.EndpointDefinition {
 	}
 
 	litRep := NewRepresentation(repr)
-	ed := &proto.EndpointDefinition{
-		Name:    "httpRequest",
-		Grammar: grammar,
-		Literal: litRep.m,
-		Type:    EndpointTypeHTTPRequestAccessor,
+	ed := &proto.EndpointMeta{
+		Identifier: "httpRequest",
+		Grammar:    grammar,
+		Literal:    litRep.m,
+		Type:       EndpointTypeHTTPRequestAccessor,
 	}
 	return ed
 
 }
 
-func NewHttpRequestEndpoint(ed *proto.EndpointDefinition) HttpRequestEndpoint {
+func NewHttpRequestEndpoint(ed *proto.EndpointMeta) HttpRequestEndpoint {
 	rep := Representation{ed.Literal}
 
 	log.Info("creating httpRequest accessor",
@@ -98,14 +98,14 @@ func NewHttpRequestEndpoint(ed *proto.EndpointDefinition) HttpRequestEndpoint {
 	}
 }
 
-func (e HttpRequestEndpoint) Definition() *proto.EndpointDefinition {
+func (e HttpRequestEndpoint) Definition() *proto.EndpointMeta {
 	repr := NewRepresentation(e.request)
 
-	return &proto.EndpointDefinition{
-		Name:    e.Grammar.GetBase(),
-		Grammar: e.Grammar,
-		Type:    EndpointTypeHTTPRequestAccessor,
-		Literal: repr.message(),
+	return &proto.EndpointMeta{
+		Identifier: e.Grammar.GetBase(),
+		Grammar:    e.Grammar,
+		Type:       EndpointTypeHTTPRequestAccessor,
+		Literal:    repr.message(),
 	}
 }
 
@@ -139,7 +139,7 @@ func (e HttpRequestEndpoint) Source(ctx *RequestContext) interface{} {
 
 }
 
-func NewHTTPBridgeOverlay(ed *proto.EndpointDefinition) HttpBridgeOverlay {
+func NewHTTPBridgeOverlay(ed *proto.EndpointMeta) HttpBridgeOverlay {
 	return HttpBridgeOverlay{
 		BaseEndpoint: BaseEndpoint{},
 		Grammar:      ed.GetGrammar(),

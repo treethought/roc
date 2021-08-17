@@ -17,10 +17,10 @@ func NewCoreDispatcher() *CoreDispatcher {
 	return &CoreDispatcher{}
 }
 
-func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointDefinition {
+func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointMeta {
 	log.Debug("resolving request", "identifier", ctx.Request().Identifier().String())
 
-	c := make(chan (*proto.EndpointDefinition))
+	c := make(chan (*proto.EndpointMeta))
 
 	go func() {
 		for _, s := range ctx.m.Scope.Spaces {
@@ -37,7 +37,7 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointDefi
 
 }
 
-func newTransientSpace(endpoints ...*proto.EndpointDefinition) *proto.Space {
+func newTransientSpace(endpoints ...*proto.EndpointMeta) *proto.Space {
 	uid := uuid.New()
 	spaceID := fmt.Sprintf("dynamic-space://%s", uid.String())
 
@@ -46,7 +46,7 @@ func newTransientSpace(endpoints ...*proto.EndpointDefinition) *proto.Space {
 	return space
 }
 
-func injectParsedArgs(ctx *RequestContext, e *proto.EndpointDefinition) {
+func injectParsedArgs(ctx *RequestContext, e *proto.EndpointMeta) {
 	args := parseGrammar(e.Grammar, ctx.Request().Identifier().String())
 	log.Info("injecting parsed grammar args", "args", args)
 
@@ -94,7 +94,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	)
 
 	ed := d.resolveEndpoint(ctx)
-	log.Info("resolved to endpoint", "endpoint", ed.Name, "type", ed.Type)
+	log.Info("resolved to endpoint", "endpoint", ed.Identifier, "type", ed.Type)
 	log.Trace(fmt.Sprintf("%+v", ed))
 
 	injectParsedArgs(ctx, ed)
@@ -111,7 +111,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		endpoint = NewPhysicalEndpoint(ed.Cmd)
 
 	case EndpointTypeFileset:
-		endpoint = NewFilesetRegex(ed.Regex)
+		endpoint = NewFilesetRegex(ed.Identifier, ed.Regex)
 
 	case EndpointTypeTransparentOverlay:
 		overlay := NewTransparentOverlay(ed)

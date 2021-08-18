@@ -40,12 +40,19 @@ spaces:
         # via the dynamically created value space
         space:
           identifier: space://appspace
+          endpoints:
+            - identifier: files:docs
+              type: fileset
+              grammar:
+                base: "res:/doc/"
+                groups:
+                  - name: path
+                    regex: ".*"
 
           # a dummy "exposed" endpoint
           # an example to show an endpoint for which requests
           # are not processed by the overlay below
           #
-          endpoints:
             - identifier: exposed
               type: transient
               # literal: "IM EXPOSED"
@@ -73,6 +80,16 @@ spaces:
               space:
                 identifier: space:/my-wrapped
                 endpoints:
+                # a simple visualizer poc
+                  - identifier: sys:explorer
+                    type: accessor
+                    # literal: "IM EXPOSED"
+                    cmd: ./bin/std/explorer
+                    grammar:
+                      base: "res:/meta/"
+                      groups:
+                        - name: endpointID
+                          reges: ".*"
                   - identifier: example:greeter
                     type: accessor
                     grammar:

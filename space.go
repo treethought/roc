@@ -24,6 +24,7 @@ func NewSpace(identifier Identifier, endpoints ...*proto.EndpointMeta) *proto.Sp
 		Identifier: identifier.String(),
 		Imports:    []*proto.Space{},
 		Endpoints:  endpoints,
+		Clients:    make(map[string]*proto.ClientConfig),
 	}
 
 	log.Debug("created space", "identifier", space.GetIdentifier(), "endpoints", len(space.GetEndpoints()))
@@ -49,6 +50,37 @@ func LoadSpaces(path string) ([]*proto.Space, error) {
 	fmt.Println(string(out))
 
 	return def.Spaces, nil
+
+}
+
+func startAccessors(s *proto.Space) {
+	if s.Clients == nil {
+		s.Clients = make(map[string]*proto.ClientConfig)
+	}
+	log.Warn("starting accessors", "space", s.Identifier)
+	for _, e := range s.Endpoints {
+
+		if e.Space != nil {
+			startAccessors(e.Space)
+		}
+
+		if e.Type == EndpointTypeAccessor {
+			log.Warn("starting accessor", "id", e.Identifier)
+
+			phys := NewPhysicalEndpoint(e, nil)
+
+			reconf := phys.Client.ReattachConfig()
+			log.Trace("setting reattach config", "config", reconf)
+			config := &proto.ClientConfig{
+				Protocol:        string(reconf.Protocol),
+				ProtocolVersion: uint32(reconf.ProtocolVersion),
+				AddressNetwork:  reconf.Addr.Network(),
+				AddressString:   reconf.Addr.String(),
+				Pid:             uint32(reconf.Pid),
+			}
+			s.Clients[e.Identifier] = config
+		}
+	}
 
 }
 

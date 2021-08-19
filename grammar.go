@@ -17,6 +17,7 @@ import (
 var activeURIRegex = regexp.MustCompile(`\+(?P<name>[^@]+)@(?P<value>[^\+]+)`)
 
 func constructIdentifier(g *proto.Grammar, args map[string][]string) string {
+	log.Debug("building identifier from grammar", "base", g.GetBase())
 	if g.GetActive() != nil {
 		i := g.Active.GetIdentifier()
 		for k, v := range args {

@@ -15,7 +15,7 @@ type EndpointGRPC struct {
 }
 
 func (m *EndpointGRPC) Source(ctx *RequestContext) interface{} {
-	log.Debug("making endpoint Source grpc call", "identifier", ctx.Request().Identifier)
+	log.Debug("making endpoint Source grpc call", "identifier", ctx.Request().Identifier())
 	resp, err := m.client.Source(context.Background(), ctx.m)
 	if err != nil {
 		log.Error("error making grpc call", "error", err)

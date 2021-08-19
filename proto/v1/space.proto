@@ -22,6 +22,18 @@ message EndpointMeta {
 	string  regex = 7;
 }
 
+
+// ClientConfig contains the go-plugin configuration
+// for attaching to existing plugins
+message ClientConfig {
+	string protocol = 1;
+	uint32 protocol_version = 2;
+	string address_network = 3;
+	string address_string = 4;
+	uint32 pid = 5;
+
+}
+
 // A Space represents an address space of resources.
 // The resources of a space are composed of physical endpoints, which
 // evaluate requests issued into a space.
@@ -35,5 +47,6 @@ message Space {
 	string identifier = 1;
 	repeated Space imports = 2;
 	repeated EndpointMeta endpoints = 3 [json_name="endpoints"];
+	map<string, ClientConfig> clients = 4;
 }
 

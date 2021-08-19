@@ -9,12 +9,6 @@ import (
 	proto "github.com/treethought/roc/proto/v1"
 )
 
-// PhysicalEndpoint represents an interface to a running  endpoint instance.
-// The endpoint's binary is executed and may be killed via the Client
-type PhysicalEndpoint struct {
-	Endpoint
-	Client *plugin.Client
-	path   string
 }
 
 func Serve(e Endpoint) {
@@ -37,11 +31,58 @@ func Serve(e Endpoint) {
 
 }
 
-// NewPhysicalEndpoint starts a physical process and returns an RPC implementation
-func NewPhysicalEndpoint(ed *proto.EndpointMeta) *PhysicalEndpoint {
-	// TODO: sould meta be accessible from the physical endpoint client?
-	// We're a host! Start by launching the plugin pss.
-	log.Info("creating plugin client", "cmd", ed.GetCmd())
+// PhysicalEndpoint represents an interface to a running  endpoint instance.
+// The endpoint's binary is executed and may be killed via the Client
+type PhysicalEndpoint struct {
+	Endpoint
+	Client *plugin.Client
+	path   string
+}
+
+type netAddr struct {
+	network   string
+	stringVal string
+}
+
+func (a netAddr) Network() string {
+	return a.network
+}
+
+func (a netAddr) String() string {
+	return a.stringVal
+}
+
+func attachExisting(config *proto.ClientConfig) *plugin.Client {
+	log.Debug("re-attaching client to existing plugin", "config", config)
+
+	addr := netAddr{network: config.AddressNetwork, stringVal: config.AddressString}
+
+	reattach := &plugin.ReattachConfig{
+		Protocol:        plugin.Protocol(config.Protocol),
+		ProtocolVersion: int(config.ProtocolVersion),
+		Addr:            addr,
+		Pid:             int(config.Pid),
+	}
+
+	return plugin.NewClient(&plugin.ClientConfig{
+		HandshakeConfig: Handshake,
+		Plugins:         PluginMap,
+		Reattach:        reattach,
+		Managed:         true,
+		AllowedProtocols: []plugin.Protocol{
+			plugin.ProtocolNetRPC, plugin.ProtocolGRPC},
+		Logger: hclog.New(&hclog.LoggerOptions{
+			Name:        "phys-client",
+			Level:       LogLevel,
+			Color:       hclog.AutoColor,
+			DisableTime: true,
+		}),
+	})
+
+}
+
+func createPlugin(ed *proto.EndpointMeta) *plugin.Client {
+	log.Debug("creating new plugin instance")
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: Handshake,
 		Plugins:         PluginMap,
@@ -57,8 +98,22 @@ func NewPhysicalEndpoint(ed *proto.EndpointMeta) *PhysicalEndpoint {
 		}),
 	})
 
+	return client
+}
+
+// NewPhysicalEndpoint starts or connects to a physical process and returns an RPC client implementation
+func NewPhysicalEndpoint(ed *proto.EndpointMeta, config *proto.ClientConfig) *PhysicalEndpoint {
+	var client *plugin.Client
+	log.Debug("creating plugin client", "cmd", ed.GetCmd(), "config", config)
+	if config != nil {
+		client = attachExisting(config)
+	} else {
+		client = createPlugin(ed)
+
+	}
+
 	// Connect via RPC
-	log.Info("connecting via rpc", "cmd", ed.GetCmd())
+	log.Debug("connecting via rpc", "cmd", ed.GetCmd())
 	rpcClient, err := client.Client()
 	if err != nil {
 		log.Error("failed to connect via rpc", "endpoint", ed.GetCmd(), "error", err)
@@ -66,12 +121,11 @@ func NewPhysicalEndpoint(ed *proto.EndpointMeta) *PhysicalEndpoint {
 	}
 
 	// RequestContext the plugin
-	log.Info("dispensing plugin", "cmd", ed.GetCmd())
+	log.Debug("dispensing plugin", "cmd", ed.GetCmd())
 	raw, err := rpcClient.Dispense("endpoint")
 	if err != nil {
 		log.Error("failed to dispense endpoint", "endpoint", ed.GetCmd(), "error", err)
 		panic(err)
-		os.Exit(1)
 	}
 
 	// We should have a Greeter now! This feels like a normal interface
@@ -97,7 +151,7 @@ type PhysicalTransport struct {
 // NewPhysicalTransport starts a physical process and returns an RPC implementation
 func NewPhysicalTransport(path string) Transport {
 	// We're a host! Start by launching the plugin pss.
-	log.Info("creating transport plugin client", "cmd", path)
+	log.Debug("creating transport plugin client", "cmd", path)
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: Handshake,
 		Plugins:         PluginMap,
@@ -114,7 +168,7 @@ func NewPhysicalTransport(path string) Transport {
 	})
 
 	// Connect via RPC
-	log.Info("connecting via rpc", "cmd", path)
+	log.Debug("connecting via rpc", "cmd", path)
 	rpcClient, err := client.Client()
 	if err != nil {
 		log.Error("failed to connect via rpc", "endpoint", path, "error", err)
@@ -122,12 +176,11 @@ func NewPhysicalTransport(path string) Transport {
 	}
 
 	// RequestContext the plugin
-	log.Info("dispensing plugin", "cmd", path)
+	log.Debug("dispensing plugin", "cmd", path)
 	raw, err := rpcClient.Dispense("transport")
 	if err != nil {
 		log.Error("failed to dispense endpoint", "endpoint", path, "error", err)
 		panic(err)
-		os.Exit(1)
 	}
 
 	// We should have a Greeter now! This feels like a normal interface

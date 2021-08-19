@@ -80,16 +80,6 @@ spaces:
               space:
                 identifier: space:/my-wrapped
                 endpoints:
-                # a simple visualizer poc
-                  - identifier: sys:explorer
-                    type: accessor
-                    # literal: "IM EXPOSED"
-                    cmd: ./bin/std/explorer
-                    grammar:
-                      base: "res:/meta/"
-                      groups:
-                        - name: endpointID
-                          reges: ".*"
                   - identifier: example:greeter
                     type: accessor
                     grammar:

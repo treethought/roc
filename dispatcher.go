@@ -17,10 +17,11 @@ func NewCoreDispatcher() *CoreDispatcher {
 	return &CoreDispatcher{}
 }
 
-func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointMeta {
+func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) (*proto.EndpointMeta, *proto.Space) {
 	log.Debug("resolving request", "identifier", ctx.Request().Identifier().String())
 
 	c := make(chan (*proto.EndpointMeta))
+	sp := make(chan *proto.Space)
 
 	go func() {
 		for _, s := range ctx.m.Scope.Spaces {
@@ -28,12 +29,14 @@ func (d CoreDispatcher) resolveEndpoint(ctx *RequestContext) *proto.EndpointMeta
 			ed, ok := resolveToEndpoint(s, ctx)
 			if ok {
 				c <- ed
+				sp <- s
 			}
 		}
 	}()
 	ed := <-c
+	space := <-sp
 
-	return ed
+	return ed, space
 
 }
 
@@ -85,7 +88,8 @@ func injectParsedArgs(ctx *RequestContext, e *proto.EndpointMeta) {
 
 }
 
-func (d CoreDispatcher) getMeta(ctx *RequestContext) *proto.EndpointMeta {
+func getMeta(ctx *RequestContext) *proto.EndpointMeta {
+	log.Info("getting endpoint meta", "endpoint", ctx.Request().Identifier())
 	id := ctx.Request().Identifier().String()
 	for _, s := range ctx.Scope().Spaces {
 		for _, e := range s.Endpoints {
@@ -106,11 +110,11 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	)
 
 	if ctx.Request().Verb() == proto.Verb_VERB_META {
-		meta := d.getMeta(ctx)
+		meta := getMeta(ctx)
 		return NewRepresentation(meta), nil
 	}
 
-	ed := d.resolveEndpoint(ctx)
+	ed, space := d.resolveEndpoint(ctx)
 	log.Info("resolved to endpoint", "endpoint", ed.Identifier, "type", ed.Type)
 	log.Trace(fmt.Sprintf("%+v", ed))
 
@@ -125,7 +129,15 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		endpoint = NewTransientEndpoint(ed)
 
 	case EndpointTypeAccessor:
-		endpoint = NewPhysicalEndpoint(ed)
+
+		existing, ok := space.Clients[ed.Identifier]
+		if !ok {
+			log.Warn("no existing client for accessor, creating", "endpoint", ed.Identifier)
+		}
+
+		phys := NewPhysicalEndpoint(ed, existing)
+
+		endpoint = phys
 
 	case EndpointTypeFileset:
 		endpoint = NewFilesetRegex(ed)
@@ -146,16 +158,12 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		return NewRepresentation(nil), fmt.Errorf("unknown endpoint type")
 	}
 
-	phys, ok := endpoint.(PhysicalEndpoint)
-	if ok {
-		defer phys.Client.Kill()
-	}
-
 	log.Trace("evaluating request",
 		"identifier", ctx.Request().Identifier(),
 		"verb", ctx.Request().m.Verb,
 		"ed_type", ed.Type,
 	)
+
 	rep := Evaluate(ctx, endpoint)
 
 	repr := NewRepresentation(rep)

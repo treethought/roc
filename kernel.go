@@ -67,6 +67,11 @@ func (k Kernel) startTransport(ed *proto.EndpointMeta) (PhysicalTransport, error
 
 func (k *Kernel) Start() error {
 	log.Info("starting kernel")
+
+	for _, s := range k.Spaces {
+		startAccessors(s)
+	}
+
 	for _, s := range k.Spaces {
 		for _, ed := range s.GetEndpoints() {
 			if ed.Type == "transport" {
@@ -80,12 +85,6 @@ func (k *Kernel) Start() error {
 			}
 		}
 	}
-
-	// transport, err := k.startTransport()
-	// if err != nil {
-	// 	log.Error("error starting transport:", "err", err)
-	// 	os.Exit(1)
-	// }
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)

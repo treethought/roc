@@ -9,8 +9,6 @@ import (
 	proto "github.com/treethought/roc/proto/v1"
 )
 
-}
-
 func Serve(e Endpoint) {
 	// pluginMap is the map of plugins we can dispense.
 	var pluginMap = map[string]plugin.Plugin{

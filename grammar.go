@@ -60,7 +60,7 @@ func parseGrammar(g *proto.Grammar, i string) (args map[string][]string) {
 	path := strings.Replace(i, g.Base, "", 1)
 
 	if g.Active != nil {
-		return parseActive(g.Active, path)
+		return parseActiveArgs(g.Active, path)
 
 	}
 
@@ -101,8 +101,20 @@ func matchGrammar(g *proto.Grammar, i string) bool {
 
 	if len(g.GetActive().GetArguments()) > 0 {
 		if !matchActive(g.Active, path) {
-			log.Debug("active element does not match", "active", g.Active)
+			log.Trace("active element does not match", "active", g.Active)
 			return false
+		}
+		if g.GetActive().GetArguments() != nil {
+			args := parseActiveArgs(g.Active, path)
+			for _, a := range g.GetActive().GetArguments() {
+				if a.GetMin() > 0 {
+					if _, ok := args[a.GetName()]; !ok {
+						log.Trace("active argument not present", "argument", a)
+						return false
+					}
+				}
+
+			}
 		}
 	}
 
@@ -148,30 +160,39 @@ func parseGroupElement(g *proto.GroupElement, i string) (args map[string][]strin
 // active:toUpper+operand@file:/example.txt
 
 func matchActive(a *proto.ActiveElement, i string) bool {
-	log.Debug("performing match on active element")
+	log.Trace("performing match on active element")
 	return activeURIRegex.MatchString(i)
 }
 
-func parseActive(a *proto.ActiveElement, i string) (args map[string][]string) {
-	log.Trace("parsing active grammar")
-	args = make(map[string][]string)
-	matches := activeURIRegex.FindAllStringSubmatch(i, -1)
-
-	// TODO fix nested active - prbly include base in regex
-	for _, m := range matches {
-		name, val := m[1], m[2]
-
-		for _, arg := range a.Arguments {
-			if arg.Name == name {
-				log.Debug("parsed active arg", "name", m[1], "val", m[2])
-				_, ok := args[name]
-				if !ok {
-					args[name] = []string{}
-				}
-				args[name] = append(args[name], val)
-			}
-		}
-
+// TODO handle multiple args.
+func parseActiveSyntax(input string) (map[string]string, error) {
+	_, payload, found := strings.Cut(input, "+")
+	if !found {
+		return nil, fmt.Errorf("invalid format")
 	}
-	return args
+
+	argName, val, found := strings.Cut(payload, "@")
+	if !found {
+		return nil, fmt.Errorf("invalid format")
+	}
+
+	result := make(map[string]string)
+	result[argName] = val
+	return result, nil
 }
+
+func parseActiveArgs(a *proto.ActiveElement, i string) map[string][]string {
+	result := make(map[string][]string)
+	parsedArgs, err := parseActiveSyntax(i)
+	if err != nil {
+		log.Trace("failed to parse active syntax", "err", err)
+	}
+	for _, arg := range a.Arguments {
+		if val, ok := parsedArgs[arg.Name]; ok {
+			result[arg.Name] = []string{val}
+		}
+	}
+	return result
+
+}
+

@@ -68,6 +68,9 @@ func (k Kernel) startTransport(ed *proto.EndpointMeta) (PhysicalTransport, error
 func (k *Kernel) Start() error {
 	log.Info("starting kernel")
 
+	httpclient := NewHTTPClient(nil)
+	stdspace := NewSpace(NewIdentifier("std"), httpclient.Meta())
+	k.Register(stdspace)
 
 	for _, s := range k.Spaces {
 		startAccessors(s)

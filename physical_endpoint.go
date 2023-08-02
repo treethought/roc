@@ -119,7 +119,7 @@ func NewPhysicalEndpoint(ed *proto.EndpointMeta, config *proto.ClientConfig) *Ph
 	}
 
 	// RequestContext the plugin
-	log.Debug("dispensing plugin", "cmd", ed.GetCmd())
+	log.Info("dispensing plugin", "cmd", ed.GetCmd())
 	raw, err := rpcClient.Dispense("endpoint")
 	if err != nil {
 		log.Error("failed to dispense endpoint", "endpoint", ed.GetCmd(), "error", err)
@@ -160,7 +160,7 @@ func NewPhysicalTransport(path string) Transport {
 		Logger: hclog.New(&hclog.LoggerOptions{
 			Name:        "transport-client",
 			Level:       LogLevel,
-			Color:       hclog.AutoColor,
+			Color:       hclog.ForceColor,
 			DisableTime: true,
 		}),
 	})
@@ -174,7 +174,7 @@ func NewPhysicalTransport(path string) Transport {
 	}
 
 	// RequestContext the plugin
-	log.Debug("dispensing plugin", "cmd", path)
+	log.Info("dispensing transport plugin", "cmd", path)
 	raw, err := rpcClient.Dispense("transport")
 	if err != nil {
 		log.Error("failed to dispense endpoint", "endpoint", path, "error", err)

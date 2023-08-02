@@ -71,7 +71,7 @@ type EndpointGRPCServer struct {
 }
 
 func (m *EndpointGRPCServer) Source(ctx context.Context, req *proto.RequestContext) (*proto.Representation, error) {
-	log.Debug("begining endpoint grpc source server implementation")
+	log.Trace("begining endpoint grpc source server implementation")
 
 	rocCtx := &RequestContext{req}
 	rep := m.Impl.Source(rocCtx)

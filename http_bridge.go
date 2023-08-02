@@ -76,7 +76,7 @@ func NewHttpRequestDefinition(req *http.Request) *proto.EndpointMeta {
 func NewHttpRequestEndpoint(ed *proto.EndpointMeta) HttpRequestEndpoint {
 	rep := Representation{ed.Literal}
 
-	log.Info("creating httpRequest accessor",
+	log.Debug("creating httpRequest accessor",
 		"type", rep.Type(),
 	)
 

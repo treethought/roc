@@ -115,7 +115,7 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	}
 
 	ed, space := d.resolveEndpoint(ctx)
-	log.Info("resolved to endpoint", "endpoint", ed.Identifier, "type", ed.Type)
+	log.Info("resolved to endpoint", "endpoint", ed.Identifier, "type", ed.Type, "identifier", ctx.Request().Identifier())
 	log.Trace(fmt.Sprintf("%+v", ed))
 
 	injectParsedArgs(ctx, ed)
@@ -128,6 +128,8 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 	case EndpointTypeTransient:
 		endpoint = NewTransientEndpoint(ed)
 
+		// TODO separate idea accessor and physical
+		// we should have non-plugin accessors without need for Client
 	case EndpointTypeAccessor:
 
 		existing, ok := space.Clients[ed.Identifier]
@@ -174,6 +176,6 @@ func (d CoreDispatcher) Dispatch(ctx *RequestContext) (Representation, error) {
 		"identifier", ctx.Request().Identifier().String(),
 		"representation", repr.Type(),
 	)
-	log.Info(repr.String())
+	log.Debug(repr.String())
 	return repr, nil
 }

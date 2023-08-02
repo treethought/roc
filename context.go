@@ -79,7 +79,7 @@ func (c *RequestContext) GetArgument(name string) Identifier {
 
 // GetArgumentValue sources the identifier of the named argument to obtain it's representation
 func (c *RequestContext) GetArgumentValue(name string) (Representation, error) {
-	log.Info("sourcing argument value", "name", name)
+	log.Debug("getting argument value", "name", name)
 	identifier := c.GetArgument(name)
 	if identifier.String() == "" {
 		log.Error("argument identifier is empty", "arg_name", name)

@@ -16,12 +16,13 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		k := roc.NewKernel()
 
-		fmt.Println("loading space definitions")
 		spaces, err := roc.LoadSpaces(config)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
+
+
 		k.Register(spaces...)
 		k.Start()
 

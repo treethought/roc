@@ -5,9 +5,10 @@ import (
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
-	proto "github.com/treethought/roc/proto/v1"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 const EndpointTypeAccessor string = "accessor"

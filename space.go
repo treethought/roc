@@ -5,8 +5,9 @@ import (
 	"io/ioutil"
 
 	"github.com/hashicorp/go-hclog"
-	proto "github.com/treethought/roc/proto/v1"
 	"gopkg.in/yaml.v3"
+
+	proto "github.com/treethought/roc/proto/v1"
 )
 
 var log = hclog.New(&hclog.LoggerOptions{
@@ -45,10 +46,6 @@ func LoadSpaces(path string) ([]*proto.Space, error) {
 		log.Error("failed to parse space definition", err)
 		return def.Spaces, fmt.Errorf("failed to parse space definitions")
 	}
-
-	out, _ := yaml.Marshal(def)
-	fmt.Println(string(out))
-
 	return def.Spaces, nil
 
 }
@@ -57,16 +54,16 @@ func startAccessors(s *proto.Space) {
 	if s.Clients == nil {
 		s.Clients = make(map[string]*proto.ClientConfig)
 	}
-	log.Warn("starting accessors", "space", s.Identifier)
 	for _, e := range s.Endpoints {
 
 		if e.Space != nil {
 			startAccessors(e.Space)
 		}
 
+		// TODO don't use Accessor as indicator for endpoint with client
+		// since std/imported (in-process) endpoints don't have clients
 		if e.Type == EndpointTypeAccessor {
-			log.Warn("starting accessor", "id", e.Identifier)
-
+			log.Warn("physical endpoint", "space", s.GetIdentifier(), "idenfitier", e.Identifier, "cmd", e.Cmd)
 			phys := NewPhysicalEndpoint(e, nil)
 
 			reconf := phys.Client.ReattachConfig()
@@ -94,16 +91,13 @@ func canResolve(ctx *RequestContext, e *proto.EndpointMeta) bool {
 }
 
 func resolveToEndpoint(s *proto.Space, ctx *RequestContext) (*proto.EndpointMeta, bool) {
+	log.Trace("resolving in space", "space", s.GetIdentifier(), "request", ctx.m.Request.GetIdentifier())
 	for _, ed := range s.GetEndpoints() {
-		log.Trace("interrogating endpoint",
-			"space", s.GetIdentifier(),
-			"endpoint", ed.Identifier,
-		)
 		// TODO match grammar in endpoint or in space?
 		// e := NewPhysicalEndpoint(ed.Cmd)
 		// if e.CanResolve(ctx) {
 		if canResolve(ctx, ed) {
-			log.Debug("resolve affirmed", "endpoint_name", ed.Identifier, "cmd", ed.Cmd)
+			log.Trace("resolve affirmed", "endpoint_name", ed.Identifier, "cmd", ed.Cmd)
 			return ed, true
 		}
 	}

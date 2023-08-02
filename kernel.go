@@ -68,11 +68,9 @@ func (k Kernel) startTransport(ed *proto.EndpointMeta) (PhysicalTransport, error
 func (k *Kernel) Start() error {
 	log.Info("starting kernel")
 
-	for _, s := range k.Spaces {
-		startAccessors(s)
-	}
 
 	for _, s := range k.Spaces {
+		startAccessors(s)
 		for _, ed := range s.GetEndpoints() {
 			if ed.Type == "transport" {
 				client, err := k.startTransport(ed)
@@ -81,7 +79,6 @@ func (k *Kernel) Start() error {
 					os.Exit(1)
 				}
 				defer client.Client.Kill()
-
 			}
 		}
 	}
@@ -113,12 +110,14 @@ func (k *Kernel) Dispatch(ctx *RequestContext) (Representation, error) {
 }
 
 func (k *Kernel) Register(spaces ...*proto.Space) {
-	for _, space := range spaces {
-		k.logger.Info("registering space",
-			"space", space.GetIdentifier(),
-		)
-		id := NewIdentifier(space.GetIdentifier())
-		k.Spaces[id] = space
+	for _, s := range spaces {
+		k.logger.Info("registering space", "space", s.GetIdentifier())
+		id := NewIdentifier(s.GetIdentifier())
+		k.Spaces[id] = s
 		k.logger.Info("registered spaces", "size", len(spaces))
+
+		for _, e := range s.Endpoints {
+			log.Debug("loaded endpoint", "identifier", e.GetIdentifier(), "space", s.GetIdentifier())
+		}
 	}
 }
